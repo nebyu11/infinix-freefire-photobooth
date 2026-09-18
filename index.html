@@ -295,7 +295,7 @@
   <textarea id="caption" placeholder="Write your story/caption here...">Ready for the ultimate match! 🔥🎮 @infinixethiopia</textarea>
 
   <button class="action-btn" id="saveBtn">
-    <i class="fa-solid fa-download"></i> Copy Caption & Save Photo
+    <i class="fa-solid fa-share-nodes"></i> Share / Save Photo & Caption
   </button>
 
   <div class="app-links">
@@ -431,7 +431,7 @@
   canvas.addEventListener('touchmove', moveDrag, { passive: true });
   canvas.addEventListener('touchend', stopDrag);
 
-  // Save & Copy Action
+  // Direct Mobile Native Web Share + Download & Copy Fallback
   document.getElementById('saveBtn').addEventListener('click', async () => {
     const rawCaption = document.getElementById('caption').value.trim();
     const fullText = rawCaption ? (rawCaption + campaignTags) : campaignTags.trim();
@@ -445,13 +445,35 @@
       console.warn('Clipboard write failed:', err);
     }
 
-    // Trigger photo download
-    const link = document.createElement('a');
-    link.download = 'FreeFire-Infinix-Photo.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    // Convert canvas image to Blob/File for direct mobile sharing
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const photoFile = new File([blob], 'FreeFire-Infinix-Photo.png', { type: 'image/png' });
 
-    showToast('Photo saved & caption copied!');
+      // Try Native Mobile Web Share API first
+      if (navigator.canShare && navigator.canShare({ files: [photoFile] })) {
+        try {
+          await navigator.share({
+            title: 'Free Fire x Infinix Photobooth',
+            text: fullText,
+            files: [photoFile]
+          });
+          showToast('Sharing photo & caption copied!');
+          return;
+        } catch (shareErr) {
+          if (shareErr.name !== 'AbortError') {
+            console.warn('Native share error:', shareErr);
+          }
+        }
+      }
+
+      // Fallback: Trigger direct image file download
+      const link = document.createElement('a');
+      link.download = 'FreeFire-Infinix-Photo.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Photo saved & caption copied!');
+    }, 'image/png');
   });
 
   function showToast(msg) {
@@ -480,7 +502,6 @@
   document.getElementById('igLink').addEventListener('click', () => {
     const isAndroid = /Android/i.test(navigator.userAgent);
     if (isAndroid) {
-      // Android Intent scheme opens native Instagram app directly
       window.location.href = 'intent://instagram.com/#Intent;package=com.instagram.android;scheme=https;end;';
     } else {
       openApp('instagram://app', 'https://www.instagram.com/infinix_ethiopia/');
@@ -490,7 +511,6 @@
   document.getElementById('ttLink').addEventListener('click', () => {
     const isAndroid = /Android/i.test(navigator.userAgent);
     if (isAndroid) {
-      // Android Intent scheme opens native TikTok app directly
       window.location.href = 'intent://www.tiktok.com/@infinixethiopia#Intent;package=com.zhiliaoapp.musically;scheme=https;end;';
     } else {
       openApp('snssdk1233://', 'https://www.tiktok.com/@infinixethiopia');
