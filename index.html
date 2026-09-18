@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Fire x Infinix Photobooth | Play Bigger Live Bolder</title>
+  <meta name="description" content="Official Free Fire x Infinix Photobooth - Create customized esports photos, add official frames, and share directly to Instagram & TikTok.">
+  
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-color: #0b0e07;
+      --card-bg: rgba(22, 28, 16, 0.85);
+      --primary-lime: #84cc16;
+      --primary-lime-glow: rgba(132, 204, 22, 0.4);
+      --accent-green: #76b900;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --input-bg: #151a10;
+      --border-color: rgba(132, 204, 22, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-color);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(132, 204, 22, 0.15) 0%, transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.9) 0%, transparent 50%);
+      color: var(--text-main);
+      text-align: center;
+      min-height: 100vh;
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px 18px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px var(--primary-lime-glow);
+    }
+
+    .header {
+      margin-bottom: 16px;
+    }
+
+    .brand-title {
+      font-family: 'Teko', sans-serif;
+      font-size: 2.4rem;
+      line-height: 1;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ffffff 30%, var(--primary-lime) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    .brand-subtitle {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary-lime);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .upload-box {
+      margin-top: 14px;
+    }
+
+    label.upload-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #1f2917, #131a0e);
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    label.upload-btn:hover, label.upload-btn:active {
+      border-color: var(--primary-lime);
+      box-shadow: 0 0 15px var(--primary-lime-glow);
+      transform: translateY(-1px);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      margin-top: 16px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid var(--border-color);
+      background: #000000;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      gap: 8px;
+    }
+
+    .control-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+      background: rgba(132, 204, 22, 0.2);
+      border-color: var(--primary-lime);
+    }
+
+    textarea {
+      width: 100%;
+      height: 75px;
+      margin-top: 14px;
+      background: var(--input-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.88rem;
+      font-family: 'Inter', sans-serif;
+      resize: none;
+      outline: none;
+      transition: border 0.25s ease;
+    }
+
+    textarea:focus {
+      border-color: var(--primary-lime);
+      box-shadow: 0 0 8px var(--primary-lime-glow);
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 15px;
+      margin-top: 14px;
+      font-weight: 800;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #95e619 0%, #76b900 100%);
+      color: #050a00;
+      box-shadow: 0 6px 20px var(--primary-lime-glow);
+      transition: all 0.25s ease;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(132, 204, 22, 0.6);
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .app-links {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .app-links a {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .ig {
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      box-shadow: 0 4px 12px rgba(220, 39, 67, 0.3);
+    }
+
+    .tt {
+      background: #000000;
+      border: 1px solid #333333;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+
+    .app-links a:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #84cc16;
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="header">
+    <h1 class="brand-title">Free Fire <span style="color: var(--primary-lime)">x</span> Infinix</h1>
+    <p class="brand-subtitle">Play Bigger Live Bolder</p>
+  </div>
+
+  <div class="upload-box">
+    <label class="upload-btn">
+      <i class="fa-solid font-awesome-camera fa-camera"></i>
+      <span>Take or Choose Photo</span>
+      <input type="file" id="upload" accept="image/*" style="display:none;">
+    </label>
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="canvas" width="1080" height="1080"></canvas>
+  </div>
+
+  <div class="controls-row">
+    <button class="control-btn" id="zoomInBtn"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom In</button>
+    <button class="control-btn" id="zoomOutBtn"><i class="fa-solid fa-magnifying-glass-minus"></i> Zoom Out</button>
+    <button class="control-btn" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+  </div>
+
+  <textarea id="caption" placeholder="Write your story/caption here...">Ready for the ultimate match! 🔥🎮</textarea>
+
+  <button class="action-btn" id="saveBtn">
+    <i class="fa-solid fa-download"></i> Copy Caption & Save Photo
+  </button>
+
+  <div class="app-links">
+    <a href="instagram://camera" id="igLink" class="ig" target="_blank">
+      <i class="fa-brands fa-instagram"></i> Instagram
+    </a>
+    <a href="snssdk1233://" id="ttLink" class="tt" target="_blank">
+      <i class="fa-brands fa-tiktok"></i> TikTok
+    </a>
+  </div>
+</div>
+
+<div id="toast" class="toast">
+  <i class="fa-solid fa-circle-check"></i>
+  <span id="toastMsg">Photo saved & caption copied!</span>
+</div>
+
+<script>
+  const upload = document.getElementById('upload');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const frame = new Image();
+  frame.src = 'frame.png';
+
+  let userImage = null;
+  let scale = 1;
+  let offsetX = 0;
+  let offsetY = 0;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  const campaignTags = "\n\n#FreeFirexInfinix #PlayBiggerLiveBolder";
+
+  frame.onload = () => draw();
+
+  upload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      userImage = new Image();
+      userImage.onload = () => {
+        resetTransform();
+        draw();
+      };
+      userImage.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function resetTransform() {
+    if (!userImage) return;
+    const baseScale = Math.max(1080 / userImage.width, 1080 / userImage.height);
+    scale = baseScale;
+    offsetX = (1080 - userImage.width * scale) / 2;
+    offsetY = (1080 - userImage.height * scale) / 2;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 1080, 1080);
+
+    if (userImage) {
+      ctx.drawImage(userImage, offsetX, offsetY, userImage.width * scale, userImage.height * scale);
+    } else {
+      // Draw placeholder background when no photo is uploaded
+      ctx.fillStyle = '#151c11';
+      ctx.fillRect(0, 0, 1080, 1080);
+      ctx.fillStyle = '#76b900';
+      ctx.font = 'bold 36px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Tap "Take or Choose Photo" above', 540, 540);
+    }
+
+    // Draw frame overlay on top
+    ctx.drawImage(frame, 0, 0, 1080, 1080);
+  }
+
+  // Interactive Controls: Zoom & Pan
+  document.getElementById('zoomInBtn').addEventListener('click', () => {
+    if (!userImage) return;
+    scale *= 1.1;
+    draw();
+  });
+
+  document.getElementById('zoomOutBtn').addEventListener('click', () => {
+    if (!userImage) return;
+    scale /= 1.1;
+    draw();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!userImage) return;
+    resetTransform();
+    draw();
+  });
+
+  // Touch and Mouse Dragging
+  const getCanvasCoords = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (1080 / rect.width),
+      y: (clientY - rect.top) * (1080 / rect.height)
+    };
+  };
+
+  const startDrag = (e) => {
+    if (!userImage) return;
+    isDragging = true;
+    const coords = getCanvasCoords(e);
+    startX = coords.x - offsetX;
+    startY = coords.y - offsetY;
+  };
+
+  const moveDrag = (e) => {
+    if (!isDragging || !userImage) return;
+    const coords = getCanvasCoords(e);
+    offsetX = coords.x - startX;
+    offsetY = coords.y - startY;
+    draw();
+  };
+
+  const stopDrag = () => { isDragging = false; };
+
+  canvas.addEventListener('mousedown', startDrag);
+  canvas.addEventListener('mousemove', moveDrag);
+  canvas.addEventListener('mouseup', stopDrag);
+  canvas.addEventListener('mouseleave', stopDrag);
+
+  canvas.addEventListener('touchstart', startDrag, { passive: true });
+  canvas.addEventListener('touchmove', moveDrag, { passive: true });
+  canvas.addEventListener('touchend', stopDrag);
+
+  // Save & Copy Action
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const rawCaption = document.getElementById('caption').value.trim();
+    const fullText = rawCaption ? (rawCaption + campaignTags) : campaignTags.trim();
+
+    // Copy caption to clipboard
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(fullText);
+      }
+    } catch (err) {
+      console.warn('Clipboard write failed:', err);
+    }
+
+    // Trigger photo download
+    const link = document.createElement('a');
+    link.download = 'FreeFire-Infinix-Photo.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+    showToast('Photo saved & caption copied!');
+  });
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3500);
+  }
+
+  // Fallback handler for mobile app deeplinks
+  document.getElementById('igLink').addEventListener('click', (e) => {
+    setTimeout(() => {
+      window.location.href = 'https://www.instagram.com/';
+    }, 1500);
+  });
+
+  document.getElementById('ttLink').addEventListener('click', (e) => {
+    setTimeout(() => {
+      window.location.href = 'https://www.tiktok.com/';
+    }, 1500);
+  });
+</script>
+</body>
+</html>
