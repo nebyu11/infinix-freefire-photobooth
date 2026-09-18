@@ -292,19 +292,19 @@
     <button class="control-btn" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
   </div>
 
-  <textarea id="caption" placeholder="Write your story/caption here...">Ready for the ultimate match! 🔥🎮</textarea>
+  <textarea id="caption" placeholder="Write your story/caption here...">Ready for the ultimate match! 🔥🎮 @infinixethiopia</textarea>
 
   <button class="action-btn" id="saveBtn">
     <i class="fa-solid fa-download"></i> Copy Caption & Save Photo
   </button>
 
   <div class="app-links">
-    <a href="instagram://camera" id="igLink" class="ig" target="_blank">
-      <i class="fa-brands fa-instagram"></i> Instagram
-    </a>
-    <a href="snssdk1233://" id="ttLink" class="tt" target="_blank">
-      <i class="fa-brands fa-tiktok"></i> TikTok
-    </a>
+    <button id="igLink" class="ig" style="border:none; cursor:pointer;">
+      <i class="fa-brands fa-instagram"></i> Open Instagram
+    </button>
+    <button id="ttLink" class="tt" style="border:none; cursor:pointer;">
+      <i class="fa-brands fa-tiktok"></i> Open TikTok
+    </button>
   </div>
 </div>
 
@@ -328,7 +328,7 @@
   let startX = 0;
   let startY = 0;
 
-  const campaignTags = "\n\n#FreeFirexInfinix #PlayBiggerLiveBolder";
+  const campaignTags = "\n\n#FreeFirexInfinix #PlayBiggerLiveBolder @infinixethiopia @infinix_ethiopia";
 
   frame.onload = () => draw();
 
@@ -463,17 +463,38 @@
     }, 3500);
   }
 
-  // Fallback handler for mobile app deeplinks
-  document.getElementById('igLink').addEventListener('click', (e) => {
+  // Enhanced Native App Launchers
+  function openApp(appUri, fallbackUrl) {
+    const now = Date.now();
+    // Attempt deep link scheme
+    window.location.href = appUri;
+    
+    // If browser is still active after 1200ms, fallback to URL
     setTimeout(() => {
-      window.location.href = 'https://www.instagram.com/';
-    }, 1500);
+      if (Date.now() - now < 2000) {
+        window.location.href = fallbackUrl;
+      }
+    }, 1200);
+  }
+
+  document.getElementById('igLink').addEventListener('click', () => {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      // Android Intent scheme opens native Instagram app directly
+      window.location.href = 'intent://instagram.com/#Intent;package=com.instagram.android;scheme=https;end;';
+    } else {
+      openApp('instagram://app', 'https://www.instagram.com/infinix_ethiopia/');
+    }
   });
 
-  document.getElementById('ttLink').addEventListener('click', (e) => {
-    setTimeout(() => {
-      window.location.href = 'https://www.tiktok.com/';
-    }, 1500);
+  document.getElementById('ttLink').addEventListener('click', () => {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      // Android Intent scheme opens native TikTok app directly
+      window.location.href = 'intent://www.tiktok.com/@infinixethiopia#Intent;package=com.zhiliaoapp.musically;scheme=https;end;';
+    } else {
+      openApp('snssdk1233://', 'https://www.tiktok.com/@infinixethiopia');
+    }
   });
 </script>
 </body>
