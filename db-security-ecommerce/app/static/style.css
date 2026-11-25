@@ -30,7 +30,8 @@ button.danger { background:var(--bad); }
 button.link { background:none; padding:0; margin-left:14px; color:#fff; text-decoration:underline; }
 form.inline { display:inline; }
 table { width:100%; border-collapse:collapse; background:#fff; margin-top:14px; font-size:15px; }
-th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;
+         overflow-wrap:anywhere; }   /* long values (e.g. dumped hashes) wrap */
 th { background:#eef0f3; }
 .flash { padding:10px 14px; border-radius:6px; margin:10px 0; }
 .flash.ok { background:var(--good-bg); color:var(--good); }

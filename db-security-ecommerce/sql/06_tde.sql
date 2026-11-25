@@ -31,6 +31,7 @@
      3. TDE: master key, certificate, CERTIFICATE BACKUP, DEK, encryption ON
      4. Backup "after" and verification
      5. Tests: authorized vs unauthorized user reading card numbers
+     6. Data classification: sensitivity labels on sensitive columns
    What happens if the certificate is LOST? -> see 06b_tde_lost_cert_drill.sql
    =========================================================================== */
 
@@ -177,7 +178,8 @@ BEGIN
     PRINT 'Database encryption key created.';
 END
 GO
-ALTER DATABASE ShopDB SET ENCRYPTION ON;
+IF (SELECT is_encrypted FROM sys.databases WHERE name = N'ShopDB') = 0
+    ALTER DATABASE ShopDB SET ENCRYPTION ON;     -- (re-run: already on, skip)
 GO
 -- encryption runs in the background; wait until it is finished (state 3)
 DECLARE @wait INT = 0;
@@ -272,4 +274,24 @@ BEGIN TRANSACTION;
                    CardNumberEnc, 1, CONVERT(VARBINARY(4), PaymentID))) AS Decrypted
     FROM dbo.Payments WHERE PaymentID IN (1, 3);
 ROLLBACK TRANSACTION;   -- undo the "attack"
+GO
+
+/* ===========================================================================
+   6. DATA DISCOVERY & CLASSIFICATION (lecture: "Data Protection in Databases")
+      Label sensitive columns so auditing and tools know what they contain.
+      Running it again simply overwrites the labels (idempotent).
+   =========================================================================== */
+ADD SENSITIVITY CLASSIFICATION TO dbo.Payments.CardNumberEnc
+    WITH (LABEL = 'Highly Confidential', INFORMATION_TYPE = 'Credit Card', RANK = CRITICAL);
+ADD SENSITIVITY CLASSIFICATION TO dbo.Customers.Email, dbo.Customers.Phone
+    WITH (LABEL = 'Confidential', INFORMATION_TYPE = 'Contact Info', RANK = MEDIUM);
+ADD SENSITIVITY CLASSIFICATION TO dbo.Users.PasswordHash, dbo.Users.MfaSecretEnc
+    WITH (LABEL = 'Highly Confidential', INFORMATION_TYPE = 'Credentials', RANK = HIGH);
+GO
+PRINT '--- Sensitivity classification ---';
+SELECT OBJECT_NAME(c.major_id) AS TableName,
+       COL_NAME(c.major_id, c.minor_id) AS ColumnName,
+       c.label, c.information_type, c.rank_desc
+FROM sys.sensitivity_classifications AS c
+ORDER BY c.rank DESC, TableName;
 GO
