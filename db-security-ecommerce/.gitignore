@@ -7,3 +7,5 @@ __pycache__/
 *.cer
 *.pvk
 *.bak
+node_modules/
+presentation/img/
