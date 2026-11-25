@@ -16,6 +16,10 @@ payments and staff.
 | 8. TDE + column encryption + tests  | `sql/06_tde.sql`, `sql/06b_tde_lost_cert_drill.sql`       |
 | 9. MFA (optional)                   | `sql/07_mfa.sql` + `app/` (TOTP / Google Authenticator)   |
 
+**Written report to submit:** `docs/ShopDB_Database_Security_Report.docx` (37 pages, 31 figures).
+Fill in your name, ID and date on the cover page, then in Word use *File → Save As → PDF*
+if a PDF is required.
+
 ---
 
 ## 1. What you need (Windows 10/11)
@@ -150,7 +154,7 @@ db-security-ecommerce/
 │   ├── 07_mfa.sql                   MFA procedures (optional)
 │   └── 99_demo_queries.sql          live demo blocks for SSMS
 ├── app/                      ← Flask demo (vulnerable vs hardened) + smoke_test.py
-├── docs/                     ← risk checklist, speaker notes, Q&A cheat sheet
+├── docs/                     ← REPORT (.docx), risk checklist, speaker notes, Q&A cheat sheet
 ├── presentation/             ← slides (.pptx) with speaker notes
 └── screenshots/              ← app/ and sql/ result images + SCREENSHOTS.md
 ```

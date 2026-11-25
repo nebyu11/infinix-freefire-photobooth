@@ -62,13 +62,22 @@ There are two sets:
 ### `sql/` (real `sqlcmd` output, rendered as images)
 | File | Shows |
 |------|-------|
+| `sql_00_rebuild.png` | Full rebuild from an empty server, all scripts without errors |
+| `sql_01_rowcounts.png` | Row counts of all 8 tables + passwords stored as salt + hash |
 | `sql_01_constraints.png` | 4 bad inserts rejected (CHECK, UNIQUE, FK, CHECK) |
 | `sql_02_password_policy.png` | Weak SQL login rejected, website policy results, change-password tests |
 | `sql_03_permission_matrix.png` | ALLOWED/DENIED for 10 actions × 6 users |
 | `sql_04_rls_masking.png` | Orders per user (RLS) + masked vs unmasked customers |
 | `sql_04_attribute_change.png` | Changing Region / IsActive changes access instantly |
 | `sql_05_procedures.png` | Injection payloads, lockout, UNION/sort injection, direct SELECT denied |
+| `sql_05_register_orders.png` | Registration validation + orders through SESSION_CONTEXT |
 | `sql_06_tde_status.png` | `encryption_state = 3` + plaintext found only in the pre-TDE backup |
 | `sql_06_column_encryption.png` | Admin decrypts card numbers, sales gets NULL |
 | `sql_06_classification.png` | Sensitivity labels |
 | `sql_06b_lost_cert_drill.png` | Restore fails without the certificate (Msg 33111), works after restoring it |
+| `sql_07_mfa.png` | MFA procedures tested as the website login |
+| `sql_audit_log.png` | Audit log after the automated tests |
+| `smoke_test.png` | 22/22 automated end-to-end checks passed |
+
+All of these images are embedded, with explanations, in the written report
+`docs/ShopDB_Database_Security_Report.docx`.
