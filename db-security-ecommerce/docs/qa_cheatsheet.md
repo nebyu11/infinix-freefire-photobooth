@@ -94,7 +94,7 @@ Only the procedures write to it (they insert, nothing else). `UPDATE` and `DELET
 it. Next step in production: SQL Server Audit writing to a file or SIEM outside the
 database.
 
-**15. Your demo app has a vulnerable login. Isn't that dangerous?**
+**15. Your web shop has a vulnerable login. Isn't that dangerous?**
 It's there to *demonstrate* the attack, and it's locked down: it runs only when
 `ENABLE_VULNERABLE_DEMO=1`, answers only requests from `127.0.0.1`, the app listens
 only on `127.0.0.1`, and it uses a separate login (`legacy_app`). After the
@@ -109,3 +109,11 @@ presentation you set the flag to 0.
 * **What is `SESSION_CONTEXT`?** Key-value pairs attached to one database connection. After login the app stores `CustomerID` there (read-only), and RLS and the order procedures read it, so a customer can't see or create orders for someone else, even by editing a form.
 * **What is the "authenticator" in `ENCRYPTBYKEY`?** An extra value (the PaymentID) mixed into the encryption. If someone copies an encrypted card number to another row, it won't decrypt there (shown in `06_tde.sql` TEST D).
 * **Why are the risk ratings correct?** They're my estimates (Likelihood × Impact, 1–3 each) for a typical small online shop. In a real company you'd set them together with the business owner.
+
+### Questions about the web shop
+
+* **How does the staff portal work? Is it safe to log in to SQL Server from a web page?** Staff type their own SQL Server login and password; the portal connects to SQL Server *as that person*, so SQL Server's own RBAC, RLS, masking and key permissions decide what they see. Only the five staff logins are accepted, every failure says "Login failed.", and the password is kept only in the server's memory (never in the cookie) for 30 minutes.
+* **The "What does SQL Server let me do?" tests change data?** No. Each test runs inside a transaction that is always rolled back; it only asks SQL Server "may I?".
+* **How is the cart protected against injection?** The cart is sent to `app.sp_PlaceOrderCart` as a JSON *parameter*. `OPENJSON … WITH (ProductID INT, Quantity INT)` converts it into a typed table; text that is not a number is rejected. It is never executed as SQL.
+* **Could a customer order or look at orders as someone else?** No. The customer number is never sent by the browser: the app puts it in `SESSION_CONTEXT` (read-only) after login, the procedures read it from there, and Row-Level Security (filter + block predicates) enforces it in the database.
+* **Where are card numbers entered at checkout?** Nowhere, on purpose: in a real shop a payment gateway (Telebirr, CBE Birr, card processor) handles them, so the shop never stores new card numbers (PCI DSS). The encrypted card numbers in the database are historical sample data for the column-encryption demo.

@@ -16,7 +16,7 @@ payments and staff.
 | 8. TDE + column encryption + tests  | `sql/06_tde.sql`, `sql/06b_tde_lost_cert_drill.sql`       |
 | 9. MFA (optional)                   | `sql/07_mfa.sql` + `app/` (TOTP / Google Authenticator)   |
 
-**Written report to submit:** `docs/ShopDB_Database_Security_Report.docx` (37 pages, 31 figures).
+**Written report to submit:** `docs/ShopDB_Database_Security_Report.docx` (43 pages, 38 figures).
 Fill in your name, ID and date on the cover page, then in Word use *File → Save As → PDF*
 if a PDF is required.
 
@@ -106,8 +106,16 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open **http://127.0.0.1:5000**. The page has a **green (hardened)** and a **red
-(vulnerable, lab only)** version of the login and the search.
+Open **http://127.0.0.1:5000**: the **ShopDB web shop**. Every page shows one security control:
+
+| Page | Security control it demonstrates |
+|------|----------------------------------|
+| **Shop** (storefront) | product search/filter/sort through `app.sp_SearchProducts` with parameters |
+| **Cart** → checkout | `app.sp_PlaceOrderCart`: typed JSON, one transaction, customer from `SESSION_CONTEXT` |
+| **Log in / Register** | password policy, salted hash, lockout, MFA |
+| **My account** | my orders (Row-Level Security), change password, MFA set-up |
+| **Staff portal** | staff log in with their **own SQL Server login** (`STAFF_PASSWORD`); the same page shows each person's RBAC/ABAC permissions, masking and card decryption |
+| **Security lab** | **green (hardened)** vs **red (deliberately vulnerable, localhost only)** login and search for the SQL-injection demo |
 
 Sample website accounts all use the `DEMO_USER_PASSWORD` from `.env`:
 
@@ -117,15 +125,18 @@ Sample website accounts all use the `DEMO_USER_PASSWORD` from `.env`:
 | `liya.t` | Customer (Hawassa) | has orders 1003, 1010 |
 | `yonas.b`, `samuel.g`, `bethel.a`, `kidus.w` | Customer | |
 | `admin.tsehay` | Admin | good account for the MFA demo |
-| `sales.abebe`, `support.dawit`, `audit.meron` | staff | |
+| `sales.abebe`, `support.dawit`, `audit.meron` | staff (website accounts) | |
 
-**Check everything in 10 seconds.** With the app running, open a second terminal and run:
+Staff portal logins (password = `STAFF_PASSWORD` from `.env`): `shop_admin`, `sales_addis`,
+`sales_hawassa`, `support_dawit`, `auditor_meron`.
+
+**Check everything in about 15 seconds.** With the app running, open a second terminal and run:
 
 ```powershell
 cd app; .\.venv\Scripts\Activate.ps1; pip install requests; python smoke_test.py
 ```
 
-Expected: `22/22 checks passed`. (It registers one random test customer per run.)
+Expected: `37/37 checks passed`. (It registers one random test customer and places two small test orders per run.)
 
 ## 5. Live demo in SSMS
 
@@ -153,7 +164,7 @@ db-security-ecommerce/
 │   ├── 06b_tde_lost_cert_drill.sql  certificate loss / restore drill
 │   ├── 07_mfa.sql                   MFA procedures (optional)
 │   └── 99_demo_queries.sql          live demo blocks for SSMS
-├── app/                      ← Flask demo (vulnerable vs hardened) + smoke_test.py
+├── app/                      ← ShopDB web shop (Flask): shop, cart, accounts, staff portal, security lab + smoke_test.py
 ├── docs/                     ← REPORT (.docx), risk checklist, speaker notes, Q&A cheat sheet
 ├── presentation/             ← slides (.pptx) with speaker notes
 └── screenshots/              ← app/ and sql/ result images + SCREENSHOTS.md

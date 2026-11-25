@@ -111,6 +111,31 @@ GRANT UNMASK ON dbo.Customers TO sales_role;
 PRINT 'Dynamic Data Masking on Customers.Email and Customers.Phone (UNMASK: admin, sales).';
 GO
 
+/* ---------------------------------------------------------------------------
+   4. "WHO AM I?" for the staff portal of the web shop
+      Staff log in to the portal with their OWN SQL Server login, so every
+      query there runs with their real permissions. This procedure shows them
+      their role(s) and ABAC attributes. It reads dbo.Staff through ownership
+      chaining, so staff need no SELECT right on the Staff table itself.
+   --------------------------------------------------------------------------- */
+CREATE OR ALTER PROCEDURE sec.sp_MyAttributes
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT USER_NAME() AS DbUser,
+           s.FullName, s.Department, s.Region, s.IsActive,
+           CONCAT_WS(N', ',
+               CASE WHEN IS_ROLEMEMBER(N'admin_role')   = 1 THEN N'admin_role'   END,
+               CASE WHEN IS_ROLEMEMBER(N'sales_role')   = 1 THEN N'sales_role'   END,
+               CASE WHEN IS_ROLEMEMBER(N'support_role') = 1 THEN N'support_role' END,
+               CASE WHEN IS_ROLEMEMBER(N'auditor_role') = 1 THEN N'auditor_role' END) AS Roles
+    FROM (SELECT 1 AS x) AS one
+    LEFT JOIN dbo.Staff AS s ON s.DbUserName = USER_NAME();
+END
+GO
+GRANT EXECUTE ON sec.sp_MyAttributes TO admin_role, sales_role, support_role, auditor_role;
+GO
+
 /* ===========================================================================
    DEMO: the SAME query run by different users returns different
    ROWS (RLS) and different COLUMN VALUES (masking).

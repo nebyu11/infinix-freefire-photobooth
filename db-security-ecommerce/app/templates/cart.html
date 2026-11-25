@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_icon.html" import icon %}
+{% block content %}
+<h2>Your cart</h2>
+{% if lines %}
+<div class="cart-layout">
+  <table class="cart">
+    <tr><th></th><th>Product</th><th>Price</th><th>Quantity</th><th>Subtotal</th></tr>
+    {% for l in lines %}
+    <tr>
+      <td><div class="mini tile cat-{{ l.p.Category }}">{{ icon(l.p.Category) }}</div></td>
+      <td><b>{{ l.p.Name }}</b><br><span class="muted">{{ l.p.SKU }}</span></td>
+      <td>{{ "{:,.2f}".format(l.p.Price) }}</td>
+      <td>
+        <form method="post" action="{{ url_for('cart_update') }}" class="row compact">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="product_id" value="{{ l.p.ProductID }}">
+          <input type="number" name="quantity" min="0" max="10" value="{{ l.qty }}" class="qty">
+          <button class="secondary">Update</button>
+        </form>
+      </td>
+      <td><b>{{ "{:,.2f}".format(l.subtotal) }}</b></td>
+    </tr>
+    {% endfor %}
+  </table>
+  <aside class="panel good checkout">
+    <h3>Checkout</h3>
+    <div class="total">Total <b>{{ "{:,.2f}".format(total) }} ETB</b></div>
+    {% if session.user and session.user.customer_id %}
+    <form method="post" action="{{ url_for('checkout') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <label>Payment method
+        <select name="method">{% for m in methods %}<option>{{ m }}</option>{% endfor %}</select>
+      </label>
+      <button class="wide">Place order</button>
+    </form>
+    <p class="muted">🔒 <code>app.sp_PlaceOrderCart</code> checks stock and creates the whole order in one transaction.
+       Your customer number comes from your login session, never from this form. Card numbers are never sent to the shop.</p>
+    {% else %}
+    <p>Please <a href="{{ url_for('login_page') }}">log in</a> with a customer account to place your order.</p>
+    {% endif %}
+  </aside>
+</div>
+{% else %}
+<p class="muted">Your cart is empty. <a href="{{ url_for('shop') }}">Continue shopping</a>.</p>
+{% endif %}
+{% endblock %}

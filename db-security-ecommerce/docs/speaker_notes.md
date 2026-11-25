@@ -5,20 +5,21 @@
 > Presenter View). **Don't read it word for word.** Read it a few times, then say
 > it in your own words. Put your name on slide 1 (replace `[Your name]`).
 
-## Timing plan (34 slides, about 55.6 min including 5 min Q&A)
+## Timing plan (36 slides, about 57.1 min including 5 min Q&A)
 
 | Part | Slides | Minutes | Tip |
 |------|--------|---------|-----|
 | Opening | 1–2 | 2 | Say the six parts and the application area |
 | 1 · Key concepts | 3–12 | 15 | Each concept ends with "…and in my project you'll see it in step X" |
 | 2 · Why it matters | 13–15 | 4 | Spend most of the time on the risk checklist (slide 15) |
-| 3 · Implementation approach | 16–22 | 9 | Diagrams only, no code (assignment rule) |
-| 4 · Results & live demo | 23–31 | 16 | Live demo ≈ 10 min on slide 24. If it went well, slides 25–30 take only ~45 s each as a recap |
-| 5 · Conclusion & peer feedback | 32–33 | 4 | Ask the audience the questions on slide 33 |
-| 6 · Q&A | 34 | 5 | See `docs/qa_cheatsheet.md` |
+| 3 · Implementation approach | 16–22 | 9 | Diagrams only, no code (assignment rule). Slide 17 introduces the three "doors" |
+| 4 · Results & live demo | 23–33 | 17 | Live demo ≈ 10 min on slide 24. If it went well, slides 25–32 take only ~45 s each as a recap |
+| 5 · Conclusion & peer feedback | 34–35 | 4 | Ask the audience the questions on slide 35 |
+| 6 · Q&A | 36 | 5 | See `docs/qa_cheatsheet.md` |
 
-**Running long?** Shorten slides 6 (authentication methods) and 9 (MFA): say one
-sentence each. **Running short?** On slide 21, also open block D6 in SSMS.
+**Running long?** Shorten slides 6 (authentication methods) and 9 (MFA) to one
+sentence each, and skip demo step C (slide 32 shows lockout and MFA).
+**Running short?** In the staff portal, also log in as `sales_hawassa` and `auditor_meron`.
 
 ## Live-demo checklist
 
@@ -29,9 +30,9 @@ sentence each. **Running short?** On slide 21, also open block D6 in SSMS.
    .\run_sql.ps1
    .\run_sql.ps1 sql\06b_tde_lost_cert_drill.sql
    ```
-2. Start the app (`cd app`, `.\.venv\Scripts\Activate.ps1`, `python app.py`), then in a second window run `python smoke_test.py` and check for **22/22 checks passed**.
+2. Start the app (`cd app`, `.\.venv\Scripts\Activate.ps1`, `python app.py`), then in a second window run `python smoke_test.py` and check for **37/37 checks passed**.
 3. The smoke test adds test users and orders. Rebuild again for clean demo data (repeat step 1).
-4. **Set up MFA for `admin.tsehay` on your phone now**: log in → *Account & MFA* → *Set up MFA* → scan → type the code. This saves a QR scan in front of the audience.
+4. **Set up MFA for `admin.tsehay` on your phone now**: log in → *My account* → *Set up MFA* → scan → type the code. This saves a QR scan in front of the audience.
 5. Rehearse the whole demo once with a timer.
 
 ### 30 minutes before
@@ -39,44 +40,46 @@ sentence each. **Running short?** On slide 21, also open block D6 in SSMS.
 - SQL Server running (`services.msc` → *SQL Server (MSSQLSERVER)* → Running).
 - Open these windows, in this order (Alt+Tab between them):
   1. PowerPoint (Presenter View)
-  2. Browser at **http://127.0.0.1:5000**, zoom 125 %
+  2. Browser at **http://127.0.0.1:5000** (the shop), zoom 125 %
   3. SSMS with `sql\99_demo_queries.sql` open; Results to Grid (Ctrl+D); bigger font (Tools → Options → Fonts and Colors, size 14)
   4. PowerShell with the app running (`python app.py`)
   5. File Explorer at the SQL Server **Backup** folder (shows the `.cer`, `.pvk` and `.bak` files)
-- Keep the payloads ready: they are on the home page under **"Demo payloads"** (click to expand), so you can copy-paste them.
+- The SQL-injection payloads are on the **Security lab** page under **"Demo payloads"** (click to expand), ready to copy-paste.
 
 ### Demo order (on slide 24, about 10 minutes)
 
 | # | Where | Do this | You should see |
 |---|-------|---------|----------------|
-| A1 | Browser, **red** login | user `' OR '1'='1' --`, password `x` | Yellow banner *Logged in as selam.g … VULNERABLE*. Point at the SQL box. Then **Log out** |
-| A2 | Browser, **green** login | same input | *Invalid username or password* |
-| A3 | **Red** search | `' UNION SELECT Username, Role + ' \| ' + CONVERT(varchar(200), PasswordHash, 1), 0 FROM dbo.Users --` | List of usernames + hashes |
-| A4 | **Green** search | same input | *No products found* + parameters shown separately |
-| A5 | **Red** search | `'; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' --` then **green** search `Laptop` | Laptop costs **1.00** |
+| A1 | **Security lab** → red login | user `' OR '1'='1' --`, password `x` | Yellow banner *Logged in as selam.g … VULNERABLE*, plus the SQL that was built. Then **Log out** (top bar) |
+| A2 | Security lab → **green** login | same input | *Invalid username or password* |
+| A3 | Security lab → **red** search | `' UNION SELECT Username, Role + ' \| ' + CONVERT(varchar(200), PasswordHash, 1), 0 FROM dbo.Users --` | List of usernames + hashes |
+| A4 | Security lab → **green** search | same input | *No products found* + parameters shown separately |
+| A5 | **Red** search, then **Shop** → *Electronics* | `'; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' --` | The Laptop costs **1.00 ETB** in the real shop |
 | A6 | **Red** search (repair) | `'; UPDATE dbo.Products SET Price = 65000 WHERE SKU = 'EL-LAP-002' --` | Price restored (say: "the attacker could do this too") |
-| B1 | **Green** login | `kidus.w` with a wrong password **5×** | *Account locked after too many failed attempts* |
-| B2 | **Green** login | `selam.g` + demo password → **My orders** | Only orders #1001 and #1009 (RLS). Log out |
-| B3 | **Green** login | `admin.tsehay` + demo password → type the code from the phone | *Second factor…* page, then *Welcome admin.tsehay (password + one-time code)* |
-| C1 | SSMS block **D4** | F5 | *UPDATE permission was denied* / *SELECT permission was denied … Customers* |
-| C2 | SSMS block **D5** | F5 | Addis rows vs Hawassa rows |
-| C3 | SSMS block **D6** | F5 | Real e-mails vs `sXXX@XXXX.com` |
-| D1 | SSMS block **D7** | F5 | ShopDB `encryption_state = 3` |
-| D2 | SSMS block **D8** | F5 | Admin: card numbers · sales: `NULL` |
-| D3 | File Explorer | show the backup folder | `TDE_ShopDB_Cert_xxxx.cer/.pvk`, before/after `.bak` |
-| E1 | SSMS block **D9** | F5 | The audit log shows the attacks you just made (LOGIN_REJECTED_INPUT, ACCOUNT_LOCKED, MFA_SUCCESS…) |
-| E2 | SSMS block **D10** | remove the `--` and press F5 | Unlocks `kidus.w` for the next rehearsal |
+| B1 | **Log in** (top bar) | `selam.g` + demo password | *Welcome selam.g* |
+| B2 | **Shop** → **Cart** | add *Yirgacheffe Coffee* ×2 and *Berbere Spice* → **Cart** → Telebirr → **Place order** | *Order #… was placed*; **My account** shows only Selam's orders (RLS), including the new one with both products. Log out |
+| C1 | **Log in** | `kidus.w` with a wrong password **5×** | *Account locked after too many failed attempts* |
+| C2 | **Log in** | `admin.tsehay` + demo password → type the code from the phone | *Second factor…* page, then *Welcome admin.tsehay (password + one-time code)*. Log out |
+| D1 | **Staff portal** | login `sales_addis` + staff password | Attributes *Sales · Addis Ababa*; ✓ read orders / change status, ✗ prices, hashes, audit log; only Addis orders; card numbers NULL. **Log out of portal** |
+| D2 | **Staff portal** | login `support_dawit` | All regions, but e-mails `sXXX@XXXX.com`; payments denied |
+| D3 | **Staff portal** | login `shop_admin` | ✓ prices, real card numbers; ✗ password hashes, delete audit log, drop table |
+| E1 | SSMS block **D7** | F5 | ShopDB `encryption_state = 3` |
+| E2 | SSMS block **D9** | F5 | The audit log shows what you just did (LOGIN_REJECTED_INPUT, ORDER_PLACED, ACCOUNT_LOCKED, MFA_SUCCESS…) |
+| E3 | SSMS block **D10** | remove the `--` and press F5 | Unlocks `kidus.w` for the next rehearsal |
+
+Optional if time allows: SSMS blocks D4–D6 and D8 show the same RBAC / RLS / masking / encryption results directly in SQL.
 
 ### If something fails (fallbacks)
 
 | Problem | Quick fix (≤ 1 min) | Otherwise |
 |---------|---------------------|-----------|
-| Browser: "can't connect" | The app window was closed. Run `python app.py` again | Show slides 25–26 (screenshots of the same steps) |
-| App error / login always fails | Check `.env` (passwords must match those used by `run_sql.ps1`) | Slides 25–26 |
-| SQL Server not running | `services.msc` → start *SQL Server (MSSQLSERVER)* | Slides 27–30 |
-| Database in a strange state | `.\run_sql.ps1 sql\00_reset.sql` then `.\run_sql.ps1` (about 10 s), then restart the app | Slides 27–30 |
+| Browser: "can't connect" | The app window was closed. Run `python app.py` again | Show slides 25–28 (screenshots of the same steps) |
+| App error / login always fails | Check `.env` (passwords must match those used by `run_sql.ps1`) | Slides 25–28 |
+| Staff portal says "Login failed." | Use `STAFF_PASSWORD` from `.env`; pick one of the five staff logins | Slide 28 |
+| SQL Server not running | `services.msc` → start *SQL Server (MSSQLSERVER)* | Slides 25–32 |
+| Database in a strange state | `.\run_sql.ps1 sql\00_reset.sql` then `.\run_sql.ps1` (about 10 s), then restart the app | Slides 25–32 |
 | Account locked from rehearsal | SSMS block D10 (unlock) | Use another customer, e.g. `liya.t` |
-| MFA code rejected | Phone time: Settings → automatic time. Wait for a fresh code | Slide 30 + explain the flow |
+| MFA code rejected | Phone time: Settings → automatic time. Wait for a fresh code | Slide 32 + explain the flow |
 | Projector text too small | Browser Ctrl + `+`; SSMS Ctrl + mouse wheel | none needed |
 
 **Golden rule:** if a fix takes more than one minute, say *"I have the same result
@@ -221,15 +224,17 @@ Two risks are critical: weak passwords and SQL injection, so I fixed those first
 
 Part three: my implementation approach. As the assignment asks, I show it with diagrams, not with code.
 
-### Slide 17: Architecture: two doors into the same database  _(≈ 2 min)_
+### Slide 17: Architecture: three doors into the same database  _(≈ 2 min)_
 
-This is the architecture. A browser talks to a small Flask web application. It runs only on 127.0.0.1, so nobody else on the network can reach it.
+This is the architecture. A browser talks to my ShopDB web shop, a small Flask application. It runs only on 127.0.0.1, so nobody else on the network can reach it.
 
-The app has two "doors" into SQL Server. The green door is the hardened path: it connects as shop_app, a login that is only allowed to EXECUTE the stored procedures in the "app" schema. It cannot read any table directly.
+The shop has three "doors" into SQL Server. The green door is used by customers: the storefront, cart, checkout and account pages. It connects as shop_app, a login that may only EXECUTE the stored procedures in the "app" schema; it cannot read any table directly.
 
-The red door is the deliberately vulnerable path for the demo only. It glues input into SQL strings and connects as legacy_app, which can read and write every table, like many badly built real applications.
+The gold door is the staff portal. Staff log in with their OWN SQL Server login, for example sales_addis. Every query on their dashboard runs with their real permissions, so SQL Server itself decides what they may see.
 
-Inside SQL Server the tables live in the dbo schema, the procedures in the app schema, and the row-level security rules in the sec schema. On disk everything is encrypted with TDE. The passwords for all of this are in a .env file, never in the code.
+The red door is the security lab: a deliberately vulnerable login and search, for the demo only. It glues input into SQL strings and connects as legacy_app, which can read and write every table.
+
+Inside SQL Server the tables live in dbo, the procedures in app, and the row-level security rules in sec. On disk everything is encrypted with TDE. All passwords are in a .env file, never in the code.
 
 ### Slide 18: Build order: one script per security layer  _(≈ 1 min)_
 
@@ -285,7 +290,7 @@ Part four: the results. I will now switch to the live demonstration. If anything
 
 Here is the order of my demo, so you can follow along.
 
-First I attack the vulnerable login and search with SQL injection, and then I try exactly the same input on the hardened version. Second, the lockout and the MFA login. Third, I switch to SQL Server Management Studio and run the same query as different users, to show RBAC, row-level security and masking. Fourth, the encryption: TDE status, and card numbers for an authorized and an unauthorized user. Last, the audit log shows everything I just did.
+First, the security lab: I attack the vulnerable login and search with SQL injection, and then try exactly the same input on the hardened version. Second, the shop itself: I log in as a customer, fill the cart, check out, and show that "My orders" contains only my orders. Third, lockout and the MFA login. Fourth, the staff portal: I log in as Abebe from sales, then as Dawit from support, then as the admin, and you will see the same page show different rows, masked e-mails, card numbers or "permission denied". Last, SSMS: the TDE status and the audit log, which recorded everything I just did.
 
 ### Slide 25: Result 1: the same input, two different outcomes  _(≈ 0.75 min)_
 
@@ -301,43 +306,61 @@ A second payload, a stacked UPDATE, changed the laptop price to 1 birr. That is 
 
 On the hardened side the same inputs return nothing, and the parameters are shown separately from the SQL text. The website login has no right to read tables anyway, so even a mistake in the code would fail.
 
-### Slide 27: Result 3: least privilege, proven for every role  _(≈ 0.75 min)_
+### Slide 27: Result 3: a real shop, secured on every page  _(≈ 0.75 min)_
 
-Result three is the permission matrix. My script logs in as each user with EXECUTE AS, tries ten actions, and records whether SQL Server allowed or denied it. Everything is inside a transaction that is rolled back, so nothing changes.
+Result three is the shop itself. On the left is the storefront: the search box, the category and the sort order all go to the stored procedure app.sp_SearchProducts as parameters.
+
+In the middle is the cart. At checkout the whole cart is sent to app.sp_PlaceOrderCart as JSON data, which SQL Server converts into a typed table of numbers. Stock, order, order lines and payment are created in one transaction, and the customer number comes from the login session, never from the form, so nobody can order as someone else.
+
+On the right, "My orders": the procedure has no WHERE clause, and Row-Level Security returns only Selam's own orders, including the one she just placed.
+
+### Slide 28: Result 4: staff portal, same page, different people  _(≈ 0.75 min)_
+
+Result four is the staff portal, my favourite part. Staff log in with their own SQL Server login, and the page runs exactly the same queries for everyone. The web code does not decide anything: SQL Server does.
+
+On the left is Abebe from sales in Addis Ababa. His attributes are shown at the top. SQL Server lets him read orders, but only the Addis ones, and lets him change an order status, but denies changing prices, reading password hashes or the audit log. Card numbers stay NULL because he has no key.
+
+In the middle is Dawit from support: he sees orders from every region, but customer e-mails and phones are masked, and payments are denied completely.
+
+On the right is the admin: she sees real card numbers because she holds the key permission, but even she may not read password hashes, delete the audit log or drop a table.
+
+### Slide 29: Result 5: least privilege, proven for every role  _(≈ 0.75 min)_
+
+Result five is the permission matrix. My script logs in as each user with EXECUTE AS, tries ten actions, and records whether SQL Server allowed or denied it. Everything is inside a transaction that is rolled back, so nothing changes.
 
 Look at the website_app column: it is denied on every table, and only allowed to execute the app procedures. Nobody can read password hashes or delete the audit log, not even admin. Only the deliberately bad legacy login on the right can do the dangerous things, and that is exactly why injection on the red door was so damaging.
 
-### Slide 28: Result 4: same query, different rows and columns  _(≈ 0.75 min)_
+### Slide 30: Result 6: same query, different rows and columns  _(≈ 0.75 min)_
 
-Result four is ABAC. This is real output: one SELECT on Orders, run as five users. Admin, auditor and support see all ten, Abebe in Addis sees four, Hana in Hawassa sees three.
+Result six is ABAC. This is real output: one SELECT on Orders, run as five users. Admin, auditor and support see all ten, Abebe in Addis sees four, Hana in Hawassa sees three.
 
 Below, the same SELECT on Customers: Abebe sees only Addis customers with real e-mail and phone. Dawit from support sees all customers, but masked.
 
 On the right you see why this is attribute-based and not role-based: when I moved Abebe to Hawassa I only changed his Region attribute, not his role, and he immediately saw the Hawassa orders. When I set IsActive to zero, he saw nothing.
 
-### Slide 29: Result 5: encrypted at rest, and the certificate really matters  _(≈ 0.75 min)_
+### Slide 31: Result 7: encrypted at rest, and the certificate really matters  _(≈ 0.75 min)_
 
-Result five is TDE. The top-left shows the encryption state 3, which means encrypted, with AES-256 protected by my certificate. SQL Server also encrypts tempdb automatically.
+Result seven is TDE. The top-left shows the encryption state 3, which means encrypted, with AES-256 protected by my certificate. SQL Server also encrypts tempdb automatically.
 
 Below it is the proof: I searched the backup files for a product code and a test card number. In the backup taken BEFORE TDE, both were found as readable text. In the backup taken AFTER TDE, nothing was found.
 
 On the right is my disaster drill. Without the certificate, restoring the encrypted backup fails with error 33111, "cannot find server certificate". After restoring the certificate from my backup files, the restore works and all data is there.
 
-### Slide 30: Result 6: card numbers and MFA  _(≈ 0.75 min)_
+### Slide 32: Result 8: card numbers and MFA  _(≈ 0.75 min)_
 
-Result six. On the left, card numbers. The admin role holds the key permission and sees the real numbers; I used official test card numbers, not real cards. Sales can select the same column, but decryption returns NULL, and trying to open the key gives "cannot find the symmetric key".
+Result eight. On the left, card numbers. The admin role holds the key permission and sees the real numbers; I used official test card numbers, not real cards. Sales can select the same column, but decryption returns NULL, and trying to open the key gives "cannot find the symmetric key".
 
 On the right is MFA. The user scans the QR code with Google Authenticator. After that, the password alone is not enough: the app asks for the six-digit code. A wrong code is rejected and counts towards the lockout.
 
-### Slide 31: Verified, not assumed  _(≈ 1 min)_
+### Slide 33: Verified, not assumed  _(≈ 1 min)_
 
-To be sure that everything really works, and not only on my screen, I wrote an automated smoke test. It uses the running website like a browser and checks 22 security behaviours: injection, lockout, row-level security, CSRF protection, the password policy and MFA. All 22 pass.
+To be sure that everything really works, and not only on my screen, I wrote an automated smoke test. It uses the running website like a browser and checks 37 security behaviours: injection, the shop's cart and checkout, lockout, row-level security, CSRF protection, the password policy, MFA, and what every staff member may or may not do in the staff portal. All 37 pass.
 
 All eight SQL scripts can be re-run safely and rebuild everything from zero in about ten seconds. All ten risks from my checklist are mapped to a control. And there is no password in any source file: everything is in the .env file, which is never committed.
 
 ## 5 · Conclusion & feedback
 
-### Slide 32: Conclusion: no single control is enough, so I built layers  _(≈ 2 min)_
+### Slide 34: Conclusion: no single control is enough, so I built layers  _(≈ 2 min)_
 
 My conclusion: database security is not one feature, it is layers. If one layer fails, the next one still protects the data.
 
@@ -345,7 +368,7 @@ The network layer: the app only listens on this computer and uses an encrypted c
 
 I also want to be honest about the limits. SQL Server has no feature called ABAC, so I built it from row-level security and attributes. SQL logins have no MFA, so MFA lives in the app. In production I would hash passwords with bcrypt or Argon2, and use Always Encrypted so that even the DBA cannot read card numbers.
 
-### Slide 33: Peer feedback: help me improve  _(≈ 2 min)_
+### Slide 35: Peer feedback: help me improve  _(≈ 2 min)_
 
 Before the questions, I would like your feedback, because a security design gets better when other people try to break it.
 
@@ -355,6 +378,6 @@ Please also tell me one thing that worked well, so I know what to keep.
 
 ## 6 · Q&A
 
-### Slide 34: Questions?  _(≈ 5 min)_
+### Slide 36: Questions?  _(≈ 5 min)_
 
 Thank you for listening. I am happy to answer your questions now. All the scripts, the app, the screenshots and the README are in my project folder if you want to try it yourself.

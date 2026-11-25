@@ -486,29 +486,32 @@ Two risks are critical: weak passwords and SQL injection, so I fixed those first
   s.addText("Part 3 · architecture · build order · data model · flows (no code)", { placeholder: "body" });
   await badge(s, "FaSitemap", 0.9, 2.75, 1.3, C.accent1);
 
-  s = newSlide("CONTENT", "Architecture: two doors into the same database",
-    `This is the architecture. A browser talks to a small Flask web application. It runs only on 127.0.0.1, so nobody else on the network can reach it.
-The app has two "doors" into SQL Server. The green door is the hardened path: it connects as shop_app, a login that is only allowed to EXECUTE the stored procedures in the "app" schema. It cannot read any table directly.
-The red door is the deliberately vulnerable path for the demo only. It glues input into SQL strings and connects as legacy_app, which can read and write every table, like many badly built real applications.
-Inside SQL Server the tables live in the dbo schema, the procedures in the app schema, and the row-level security rules in the sec schema. On disk everything is encrypted with TDE. The passwords for all of this are in a .env file, never in the code.`, 2);
-  box(s, "Browser", 0.6, 2.9, 1.8, 1.0, C.accent4, C.background1, { fontSize: 18 });
-  card(s, 2.9, 1.5, 3.3, 4.2, C.background2);
-  text(s, "Flask web app", { x: 3.1, y: 1.65, w: 2.9, h: 0.45, fontSize: 18, bold: true, color: C.text2, align: "center" });
-  text(s, "listens on 127.0.0.1 only", { x: 3.1, y: 2.1, w: 2.9, h: 0.35, fontSize: 13, color: C.accent5, align: "center" });
-  box(s, "Hardened path\nprocedures + parameters", 3.1, 2.6, 2.9, 1.1, C.accent1, C.background1, { fontSize: 14 });
-  box(s, "Vulnerable path\nstring concatenation · LAB ONLY", 3.1, 4.3, 2.9, 1.1, C.accent2, C.background1, { fontSize: 14 });
-  arrow(s, 2.45, 3.4, 2.9, 3.4, C.accent5, 3);
-  box(s, "shop_app\nEXECUTE on schema app only", 6.7, 2.6, 2.4, 1.1, C.accent1, C.background1, { fontSize: 13 });
-  box(s, "legacy_app\nread + write every table", 6.7, 4.3, 2.4, 1.1, C.accent2, C.background1, { fontSize: 13 });
-  arrow(s, 6.0, 3.15, 6.7, 3.15, C.accent1, 3); arrow(s, 6.0, 4.85, 6.7, 4.85, C.accent2, 3);
-  card(s, 9.55, 1.5, 3.15, 4.2, C.text2);
-  text(s, "SQL Server 2022 · ShopDB", { x: 9.7, y: 1.62, w: 2.85, h: 0.45, fontSize: 15, bold: true, color: C.background1, align: "center" });
+  s = newSlide("CONTENT", "Architecture: three doors into the same database",
+    `This is the architecture. A browser talks to my ShopDB web shop, a small Flask application. It runs only on 127.0.0.1, so nobody else on the network can reach it.
+The shop has three "doors" into SQL Server. The green door is used by customers: the storefront, cart, checkout and account pages. It connects as shop_app, a login that may only EXECUTE the stored procedures in the "app" schema; it cannot read any table directly.
+The gold door is the staff portal. Staff log in with their OWN SQL Server login, for example sales_addis. Every query on their dashboard runs with their real permissions, so SQL Server itself decides what they may see.
+The red door is the security lab: a deliberately vulnerable login and search, for the demo only. It glues input into SQL strings and connects as legacy_app, which can read and write every table.
+Inside SQL Server the tables live in dbo, the procedures in app, and the row-level security rules in sec. On disk everything is encrypted with TDE. All passwords are in a .env file, never in the code.`, 2);
+  box(s, "Browser", 0.6, 3.2, 1.6, 1.0, C.accent4, C.background1, { fontSize: 18 });
+  card(s, 2.6, 1.45, 3.6, 4.45, C.background2);
+  text(s, "ShopDB web shop (Flask)", { x: 2.75, y: 1.55, w: 3.3, h: 0.4, fontSize: 17, bold: true, color: C.text2, align: "center" });
+  text(s, "listens on 127.0.0.1 only", { x: 2.75, y: 1.95, w: 3.3, h: 0.3, fontSize: 13, color: C.accent5, align: "center" });
+  box(s, "Shop · cart · checkout · account\nprocedures + parameters", 2.8, 2.4, 3.2, 1.0, C.accent1, C.background1, { fontSize: 13 });
+  box(s, "Staff portal\nstaff's own SQL login", 2.8, 3.55, 3.2, 1.0, C.accent3, C.text1, { fontSize: 13 });
+  box(s, "Security lab\nstring concatenation · LAB ONLY", 2.8, 4.7, 3.2, 1.0, C.accent2, C.background1, { fontSize: 13 });
+  arrow(s, 2.25, 3.7, 2.6, 3.7, C.accent5, 3);
+  box(s, "shop_app\nEXECUTE schema app only", 6.65, 2.4, 2.5, 1.0, C.accent1, C.background1, { fontSize: 13 });
+  box(s, "sales_addis, support_dawit…\nreal role permissions", 6.65, 3.55, 2.5, 1.0, C.accent3, C.text1, { fontSize: 12 });
+  box(s, "legacy_app\nread + write every table", 6.65, 4.7, 2.5, 1.0, C.accent2, C.background1, { fontSize: 13 });
+  arrow(s, 6.0, 2.9, 6.65, 2.9, C.accent1, 3); arrow(s, 6.0, 4.05, 6.65, 4.05, C.accent3, 3); arrow(s, 6.0, 5.2, 6.65, 5.2, C.accent2, 3);
+  card(s, 9.55, 1.45, 3.15, 4.45, C.text2);
+  text(s, "SQL Server 2022 · ShopDB", { x: 9.7, y: 1.57, w: 2.85, h: 0.45, fontSize: 15, bold: true, color: C.background1, align: "center" });
   [["app · procedures", C.accent1], ["dbo · tables", C.accent4], ["sec · RLS rules", C.accent6]].forEach(([t, f], i) =>
-    box(s, t, 9.8, 2.2 + i * 0.75, 2.65, 0.6, f, C.background1, { fontSize: 14 }));
+    box(s, t, 9.8, 2.15 + i * 0.75, 2.65, 0.6, f, C.background1, { fontSize: 14 }));
   box(s, "Disk: .mdf · .ldf · .bak\nencrypted by TDE", 9.8, 4.55, 2.65, 0.95, C.accent3, C.text1, { fontSize: 13 });
-  arrow(s, 9.1, 3.15, 9.8, 2.5, C.accent1, 3); arrow(s, 9.1, 4.85, 9.8, 3.25, C.accent2, 3);
-  box(s, ".env: all passwords & keys (never committed)", 2.9, 6.05, 5.0, 0.6, C.background2, C.text2, { fontSize: 14 });
-  box(s, "Phone: TOTP code (MFA)", 8.2, 6.05, 4.5, 0.6, C.background2, C.text2, { fontSize: 14 });
+  arrow(s, 9.15, 2.9, 9.8, 2.45, C.accent1, 3); arrow(s, 9.15, 4.05, 9.8, 3.2, C.accent3, 3); arrow(s, 9.15, 5.2, 9.8, 3.25, C.accent2, 3);
+  box(s, ".env: all passwords & keys (never committed)", 2.6, 6.15, 5.0, 0.55, C.background2, C.text2, { fontSize: 14 });
+  box(s, "Phone: TOTP code (MFA)", 8.2, 6.15, 4.5, 0.55, C.background2, C.text2, { fontSize: 14 });
 
   s = newSlide("CONTENT", "Build order: one script per security layer",
     `I built the project in layers, one numbered script per layer, and each script can be run again safely.
@@ -640,18 +643,18 @@ The most important lesson: I backed up the TDE certificate and its private key t
 
   s = newSlide("CONTENT", "Demo plan (about 10 minutes)",
     `Here is the order of my demo, so you can follow along.
-First I attack the vulnerable login and search with SQL injection, and then I try exactly the same input on the hardened version. Second, the lockout and the MFA login. Third, I switch to SQL Server Management Studio and run the same query as different users, to show RBAC, row-level security and masking. Fourth, the encryption: TDE status, and card numbers for an authorized and an unauthorized user. Last, the audit log shows everything I just did.`, 10);
-  const demo = [["1", "SQL injection: red vs green", "login bypass · dump hashes · 1-ETB price", "FaBug"],
-    ["2", "Lockout & MFA", "5 wrong passwords · phone code", "FaMobileAlt"],
-    ["3", "RBAC · ABAC · masking", "same query, different users (SSMS)", "FaUsers"],
-    ["4", "Encryption", "TDE state · card numbers: admin vs sales", "FaLock"],
-    ["5", "Audit trail", "every attack was recorded", "FaClipboardCheck"]];
+First, the security lab: I attack the vulnerable login and search with SQL injection, and then try exactly the same input on the hardened version. Second, the shop itself: I log in as a customer, fill the cart, check out, and show that "My orders" contains only my orders. Third, lockout and the MFA login. Fourth, the staff portal: I log in as Abebe from sales, then as Dawit from support, then as the admin, and you will see the same page show different rows, masked e-mails, card numbers or "permission denied". Last, SSMS: the TDE status and the audit log, which recorded everything I just did.`, 10);
+  const demo = [["1", "Security lab: red vs green", "login bypass · dump hashes · 1-ETB price", "FaBug"],
+    ["2", "Shop: cart → checkout → my orders", "procedures · SESSION_CONTEXT · RLS", "FaShoppingCart"],
+    ["3", "Lockout & MFA", "5 wrong passwords · phone code", "FaMobileAlt"],
+    ["4", "Staff portal: sales vs support vs admin", "RBAC · ABAC · masking · card decryption", "FaUsers"],
+    ["5", "SSMS: TDE + audit trail", "encryption state · every attack recorded", "FaLock"]];
   for (let i = 0; i < 5; i++) {
     const y = 1.45 + i * 1.05;
     card(s, 0.6, y, 12.1, 0.9, i % 2 ? C.background1 : C.background2);
-    await badge(s, demo[i][3], 0.8, y + 0.1, 0.7, i === 0 ? C.accent2 : C.accent1);
-    text(s, demo[i][0] + ". " + demo[i][1], { x: 1.75, y: y + 0.2, w: 5.4, h: 0.5, fontSize: 19, bold: true, color: C.text2 });
-    text(s, demo[i][2], { x: 7.2, y: y + 0.22, w: 5.3, h: 0.5, fontSize: 16, color: C.text1 });
+    await badge(s, demo[i][3], 0.8, y + 0.1, 0.7, i === 0 ? C.accent2 : (i === 3 ? C.accent3 : C.accent1));
+    text(s, demo[i][0] + ". " + demo[i][1], { x: 1.75, y: y + 0.2, w: 6.0, h: 0.5, fontSize: 19, bold: true, color: C.text2 });
+    text(s, demo[i][2], { x: 7.8, y: y + 0.22, w: 4.8, h: 0.5, fontSize: 16, color: C.text1 });
   }
 
   s = newSlide("CONTENT", "Result 1: the same input, two different outcomes",
@@ -663,9 +666,9 @@ On the right, exactly the same input in the hardened login: "Invalid username or
   tag(s, "✓ HARDENED: Invalid username or password", 6.75, 5.7, C.accent1, 5.95);
   text(s, "Same input:  ' OR '1'='1' --   in the username box", { x: 0.6, y: 6.2, w: 12.1, h: 0.4, fontSize: 15, italic: true, color: C.accent4, align: "center" });
 
-  const dump = await cropBox(SHOT("app/04_vulnerable_search_union_dump.png"), path.join(IMG, "union_dump_crop.png"), 200, 2330, 2180, 1210);
-  const laptop = await crop(SHOT("app/07b_laptop_now_costs_1_ETB.png"), path.join(IMG, "laptop_crop.png"), 0, 1180);
-  const blocked = await crop(SHOT("app/05_hardened_search_union_blocked.png"), path.join(IMG, "blocked_crop.png"), 0, 1180);
+  const dump = await cropBox(SHOT("app/04_vulnerable_search_union_dump.png"), path.join(IMG, "union_dump_crop.png"), 160, 2540, 2240, 1200);
+  const laptop = await cropBox(SHOT("app/07b_laptop_now_costs_1_ETB.png"), path.join(IMG, "laptop_crop.png"), 140, 620, 2280, 900);
+  const blocked = await cropBox(SHOT("app/05_hardened_search_union_blocked.png"), path.join(IMG, "blocked_crop.png"), 140, 380, 2280, 900);
   s = newSlide("CONTENT", "Result 2: data theft and price fraud, blocked",
     `Result two: the search box. With a UNION injection the vulnerable search returns every username together with its password hash. Thanks to the salt and the 5,000 rounds these are hard to crack, but they should never leak.
 A second payload, a stacked UPDATE, changed the laptop price to 1 birr. That is real fraud.
@@ -680,14 +683,55 @@ On the hardened side the same inputs return nothing, and the parameters are show
   await imgFit(s, blocked, 7.85, 4.3, 4.85, 2.25, "Hardened search returns nothing");
   text(s, "✓ Hardened search, same payload: 0 rows", { x: 7.85, y: 6.6, w: 4.85, h: 0.35, fontSize: 14, bold: true, color: C.accent1 });
 
-  s = newSlide("CONTENT", "Result 3: least privilege, proven for every role",
-    `Result three is the permission matrix. My script logs in as each user with EXECUTE AS, tries ten actions, and records whether SQL Server allowed or denied it. Everything is inside a transaction that is rolled back, so nothing changes.
+  s = newSlide("CONTENT", "Result 3: a real shop, secured on every page",
+    `Result three is the shop itself. On the left is the storefront: the search box, the category and the sort order all go to the stored procedure app.sp_SearchProducts as parameters.
+In the middle is the cart. At checkout the whole cart is sent to app.sp_PlaceOrderCart as JSON data, which SQL Server converts into a typed table of numbers. Stock, order, order lines and payment are created in one transaction, and the customer number comes from the login session, never from the form, so nobody can order as someone else.
+On the right, "My orders": the procedure has no WHERE clause, and Row-Level Security returns only Selam's own orders, including the one she just placed.`, 0.75);
+  const sf = await cropBox(SHOT("app/01_storefront.png"), path.join(IMG, "storefront_crop.png"), 0, 0, 2560, 1500);
+  const ct = await cropBox(SHOT("app/10a_cart.png"), path.join(IMG, "cart_crop.png"), 0, 0, 2560, 1250);
+  const mo = await cropBox(SHOT("app/09_my_orders_rls.png"), path.join(IMG, "orders_crop.png"), 0, 0, 2560, 1250);
+  await imgFit(s, sf, 0.6, 1.45, 3.9, 3.4, "Storefront");
+  await imgFit(s, ct, 4.7, 1.45, 3.9, 3.4, "Cart and checkout");
+  await imgFit(s, mo, 8.8, 1.45, 3.9, 3.4, "My orders (Row-Level Security)");
+  const sh = [["Storefront", "search · category · sort → app.sp_SearchProducts (parameters, allow-list)"],
+    ["Cart → checkout", "app.sp_PlaceOrderCart: typed JSON, one transaction, customer from the session"],
+    ["My orders", "no WHERE clause; Row-Level Security shows only my rows"]];
+  for (let i = 0; i < 3; i++) {
+    const x = 0.6 + i * 4.1;
+    card(s, x, 4.65, 3.9, 2.0, i === 1 ? "E3F4F2" : C.background2);
+    text(s, sh[i][0], { x: x + 0.25, y: 4.8, w: 3.4, h: 0.45, fontSize: 18, bold: true, color: C.text2 });
+    text(s, sh[i][1], { x: x + 0.25, y: 5.3, w: 3.4, h: 1.25, fontSize: 15, color: C.text1 });
+  }
+
+  s = newSlide("CONTENT", "Result 4: staff portal, same page, different people",
+    `Result four is the staff portal, my favourite part. Staff log in with their own SQL Server login, and the page runs exactly the same queries for everyone. The web code does not decide anything: SQL Server does.
+On the left is Abebe from sales in Addis Ababa. His attributes are shown at the top. SQL Server lets him read orders, but only the Addis ones, and lets him change an order status, but denies changing prices, reading password hashes or the audit log. Card numbers stay NULL because he has no key.
+In the middle is Dawit from support: he sees orders from every region, but customer e-mails and phones are masked, and payments are denied completely.
+On the right is the admin: she sees real card numbers because she holds the key permission, but even she may not read password hashes, delete the audit log or drop a table.`, 0.75);
+  const p1 = await cropBox(SHOT("app/18_staff_sales_addis.png"), path.join(IMG, "staff_sales_crop.png"), 150, 160, 2260, 1080);
+  const p2 = await cropBox(SHOT("app/18_staff_support_dawit.png"), path.join(IMG, "staff_support_crop.png"), 150, 160, 2260, 1080);
+  const p3 = await cropBox(SHOT("app/18_staff_shop_admin.png"), path.join(IMG, "staff_admin_crop.png"), 150, 160, 2260, 1080);
+  await imgFit(s, p1, 0.6, 1.4, 7.3, 3.6, "Staff portal as sales_addis");
+  await imgFit(s, p2, 8.2, 1.4, 4.5, 2.2, "Staff portal as support_dawit");
+  await imgFit(s, p3, 8.2, 3.75, 4.5, 2.2, "Staff portal as shop_admin");
+  const sp = [["sales_addis (Sales · Addis): ", "Addis orders only · status ✓ · prices ✗ · cards NULL · audit ✗", C.accent3],
+    ["support_dawit (Support · ALL): ", "all regions · e-mails masked · payments ✗", C.accent4],
+    ["shop_admin (Admin): ", "prices ✓ · real card numbers · hashes ✗ · delete audit ✗", C.accent1]];
+  for (let i = 0; i < 3; i++) {
+    const x = 0.6 + i * 4.1;
+    card(s, x, 6.05, 3.9, 0.85, C.background2);
+    s.addText([{ text: sp[i][0], options: { bold: true, color: sp[i][2] } }, { text: sp[i][1] }],
+      { isTextBox: true, x: x + 0.15, y: 6.08, w: 3.6, h: 0.8, fontSize: 13, color: C.text1, margin: 0, valign: "middle" });
+  }
+
+  s = newSlide("CONTENT", "Result 5: least privilege, proven for every role",
+    `Result five is the permission matrix. My script logs in as each user with EXECUTE AS, tries ten actions, and records whether SQL Server allowed or denied it. Everything is inside a transaction that is rolled back, so nothing changes.
 Look at the website_app column: it is denied on every table, and only allowed to execute the app procedures. Nobody can read password hashes or delete the audit log, not even admin. Only the deliberately bad legacy login on the right can do the dangerous things, and that is exactly why injection on the red door was so damaging.`, 0.75);
   await imgFit(s, SHOT("sql/sql_03_permission_matrix.png"), 0.6, 1.45, 12.1, 4.8, "Permission matrix", false);
   text(s, "DROP TABLE is denied even for admin: admin_role is not db_owner", { x: 0.6, y: 6.4, w: 12.1, h: 0.4, fontSize: 15, italic: true, color: C.accent4 });
 
-  s = newSlide("CONTENT", "Result 4: same query, different rows and columns",
-    `Result four is ABAC. This is real output: one SELECT on Orders, run as five users. Admin, auditor and support see all ten, Abebe in Addis sees four, Hana in Hawassa sees three.
+  s = newSlide("CONTENT", "Result 6: same query, different rows and columns",
+    `Result six is ABAC. This is real output: one SELECT on Orders, run as five users. Admin, auditor and support see all ten, Abebe in Addis sees four, Hana in Hawassa sees three.
 Below, the same SELECT on Customers: Abebe sees only Addis customers with real e-mail and phone. Dawit from support sees all customers, but masked.
 On the right you see why this is attribute-based and not role-based: when I moved Abebe to Hawassa I only changed his Region attribute, not his role, and he immediately saw the Hawassa orders. When I set IsActive to zero, he saw nothing.`, 0.75);
   await imgFit(s, SHOT("sql/sql_04_rls_masking.png"), 0.6, 1.45, 7.0, 5.3, "RLS and masking results", false);
@@ -696,8 +740,8 @@ On the right you see why this is attribute-based and not role-based: when I move
   text(s, "Change an ATTRIBUTE, not a role: moved to Hawassa → sees Hawassa orders; deactivated → sees 0 rows",
     { x: 8.05, y: 3.65, w: 4.5, h: 1.6, fontSize: 15, color: C.text1, valign: "middle" });
 
-  s = newSlide("CONTENT", "Result 5: encrypted at rest, and the certificate really matters",
-    `Result five is TDE. The top-left shows the encryption state 3, which means encrypted, with AES-256 protected by my certificate. SQL Server also encrypts tempdb automatically.
+  s = newSlide("CONTENT", "Result 7: encrypted at rest, and the certificate really matters",
+    `Result seven is TDE. The top-left shows the encryption state 3, which means encrypted, with AES-256 protected by my certificate. SQL Server also encrypts tempdb automatically.
 Below it is the proof: I searched the backup files for a product code and a test card number. In the backup taken BEFORE TDE, both were found as readable text. In the backup taken AFTER TDE, nothing was found.
 On the right is my disaster drill. Without the certificate, restoring the encrypted backup fails with error 33111, "cannot find server certificate". After restoring the certificate from my backup files, the restore works and all data is there.`, 0.75);
   await imgFit(s, SHOT("sql/sql_06_tde_status.png"), 0.6, 1.45, 5.6, 3.1, "TDE status and backup search", false);
@@ -712,14 +756,14 @@ On the right is my disaster drill. Without the certificate, restoring the encryp
     text(s, tk[i][1], { x: x + 0.25, y: 5.75, w: 3.4, h: 0.8, fontSize: 14, color: C.text1 });
   }
 
-  s = newSlide("CONTENT", "Result 6: card numbers and MFA",
-    `Result six. On the left, card numbers. The admin role holds the key permission and sees the real numbers; I used official test card numbers, not real cards. Sales can select the same column, but decryption returns NULL, and trying to open the key gives "cannot find the symmetric key".
+  s = newSlide("CONTENT", "Result 8: card numbers and MFA",
+    `Result eight. On the left, card numbers. The admin role holds the key permission and sees the real numbers; I used official test card numbers, not real cards. Sales can select the same column, but decryption returns NULL, and trying to open the key gives "cannot find the symmetric key".
 On the right is MFA. The user scans the QR code with Google Authenticator. After that, the password alone is not enough: the app asks for the six-digit code. A wrong code is rejected and counts towards the lockout.`, 0.75);
   await imgFit(s, SHOT("sql/sql_06_column_encryption.png"), 0.6, 1.45, 6.6, 3.0, "Card numbers: authorized vs unauthorized", false);
   text(s, "Admin (key permission) → real numbers · Sales (no key) → NULL", { x: 0.6, y: 4.65, w: 6.6, h: 0.45, fontSize: 15, bold: true, color: C.accent1 });
   text(s, "Test card numbers only (e.g. 4111 1111 1111 1111)", { x: 0.6, y: 5.1, w: 6.6, h: 0.4, fontSize: 14, italic: true, color: C.accent5 });
-  const qr = await cropBox(SHOT("app/12_mfa_setup_qr.png"), path.join(IMG, "mfa_qr_crop.png"), 160, 150, 1130, 950);
-  const prompt = await cropBox(SHOT("app/14_mfa_second_factor_prompt.png"), path.join(IMG, "mfa_prompt_crop.png"), 160, 140, 1080, 620);
+  const qr = await cropBox(SHOT("app/12_mfa_setup_qr.png"), path.join(IMG, "mfa_qr_crop.png"), 160, 360, 1110, 820);
+  const prompt = await cropBox(SHOT("app/14_mfa_second_factor_prompt.png"), path.join(IMG, "mfa_prompt_crop.png"), 160, 170, 1060, 600);
   await imgFit(s, qr, 7.45, 1.45, 2.5, 3.3, "MFA QR code setup");
   await imgFit(s, prompt, 10.2, 1.45, 2.5, 3.3, "MFA second factor prompt");
   card(s, 7.45, 5.0, 5.25, 1.7, C.text2);
@@ -727,9 +771,9 @@ On the right is MFA. The user scans the QR code with Google Authenticator. After
     { x: 7.65, y: 5.1, w: 4.9, h: 1.5, fontSize: 15, color: C.background1, valign: "middle" });
 
   s = newSlide("CONTENT", "Verified, not assumed",
-    `To be sure that everything really works, and not only on my screen, I wrote an automated smoke test. It uses the running website like a browser and checks 22 security behaviours: injection, lockout, row-level security, CSRF protection, the password policy and MFA. All 22 pass.
+    `To be sure that everything really works, and not only on my screen, I wrote an automated smoke test. It uses the running website like a browser and checks 37 security behaviours: injection, the shop's cart and checkout, lockout, row-level security, CSRF protection, the password policy, MFA, and what every staff member may or may not do in the staff portal. All 37 pass.
 All eight SQL scripts can be re-run safely and rebuild everything from zero in about ten seconds. All ten risks from my checklist are mapped to a control. And there is no password in any source file: everything is in the .env file, which is never committed.`, 1);
-  const st2 = [["22/22", "end-to-end security checks pass (smoke_test.py)", C.accent1], ["8", "SQL scripts · re-runnable · full rebuild ≈ 10 s", C.accent4],
+  const st2 = [["37/37", "end-to-end security checks pass (smoke_test.py)", C.accent1], ["8", "SQL scripts · re-runnable · full rebuild ≈ 10 s", C.accent4],
     ["10/10", "risks from the checklist mapped to a control", C.accent3], ["0", "passwords or keys in the source code", C.accent2]];
   for (let i = 0; i < 4; i++) {
     const x = 0.6 + (i % 2) * 6.15, y = 1.5 + Math.floor(i / 2) * 2.6;

@@ -5,20 +5,21 @@
 > Presenter View). **Don't read it word for word.** Read it a few times, then say
 > it in your own words. Put your name on slide 1 (replace `[Your name]`).
 
-## Timing plan (34 slides, about {{TOTAL}} min including 5 min Q&A)
+## Timing plan (36 slides, about {{TOTAL}} min including 5 min Q&A)
 
 | Part | Slides | Minutes | Tip |
 |------|--------|---------|-----|
 | Opening | 1–2 | 2 | Say the six parts and the application area |
 | 1 · Key concepts | 3–12 | 15 | Each concept ends with "…and in my project you'll see it in step X" |
 | 2 · Why it matters | 13–15 | 4 | Spend most of the time on the risk checklist (slide 15) |
-| 3 · Implementation approach | 16–22 | 9 | Diagrams only, no code (assignment rule) |
-| 4 · Results & live demo | 23–31 | 16 | Live demo ≈ 10 min on slide 24. If it went well, slides 25–30 take only ~45 s each as a recap |
-| 5 · Conclusion & peer feedback | 32–33 | 4 | Ask the audience the questions on slide 33 |
-| 6 · Q&A | 34 | 5 | See `docs/qa_cheatsheet.md` |
+| 3 · Implementation approach | 16–22 | 9 | Diagrams only, no code (assignment rule). Slide 17 introduces the three "doors" |
+| 4 · Results & live demo | 23–33 | 17 | Live demo ≈ 10 min on slide 24. If it went well, slides 25–32 take only ~45 s each as a recap |
+| 5 · Conclusion & peer feedback | 34–35 | 4 | Ask the audience the questions on slide 35 |
+| 6 · Q&A | 36 | 5 | See `docs/qa_cheatsheet.md` |
 
-**Running long?** Shorten slides 6 (authentication methods) and 9 (MFA): say one
-sentence each. **Running short?** On slide 21, also open block D6 in SSMS.
+**Running long?** Shorten slides 6 (authentication methods) and 9 (MFA) to one
+sentence each, and skip demo step C (slide 32 shows lockout and MFA).
+**Running short?** In the staff portal, also log in as `sales_hawassa` and `auditor_meron`.
 
 ## Live-demo checklist
 
@@ -29,9 +30,9 @@ sentence each. **Running short?** On slide 21, also open block D6 in SSMS.
    .\run_sql.ps1
    .\run_sql.ps1 sql\06b_tde_lost_cert_drill.sql
    ```
-2. Start the app (`cd app`, `.\.venv\Scripts\Activate.ps1`, `python app.py`), then in a second window run `python smoke_test.py` and check for **22/22 checks passed**.
+2. Start the app (`cd app`, `.\.venv\Scripts\Activate.ps1`, `python app.py`), then in a second window run `python smoke_test.py` and check for **37/37 checks passed**.
 3. The smoke test adds test users and orders. Rebuild again for clean demo data (repeat step 1).
-4. **Set up MFA for `admin.tsehay` on your phone now**: log in → *Account & MFA* → *Set up MFA* → scan → type the code. This saves a QR scan in front of the audience.
+4. **Set up MFA for `admin.tsehay` on your phone now**: log in → *My account* → *Set up MFA* → scan → type the code. This saves a QR scan in front of the audience.
 5. Rehearse the whole demo once with a timer.
 
 ### 30 minutes before
@@ -39,44 +40,46 @@ sentence each. **Running short?** On slide 21, also open block D6 in SSMS.
 - SQL Server running (`services.msc` → *SQL Server (MSSQLSERVER)* → Running).
 - Open these windows, in this order (Alt+Tab between them):
   1. PowerPoint (Presenter View)
-  2. Browser at **http://127.0.0.1:5000**, zoom 125 %
+  2. Browser at **http://127.0.0.1:5000** (the shop), zoom 125 %
   3. SSMS with `sql\99_demo_queries.sql` open; Results to Grid (Ctrl+D); bigger font (Tools → Options → Fonts and Colors, size 14)
   4. PowerShell with the app running (`python app.py`)
   5. File Explorer at the SQL Server **Backup** folder (shows the `.cer`, `.pvk` and `.bak` files)
-- Keep the payloads ready: they are on the home page under **"Demo payloads"** (click to expand), so you can copy-paste them.
+- The SQL-injection payloads are on the **Security lab** page under **"Demo payloads"** (click to expand), ready to copy-paste.
 
 ### Demo order (on slide 24, about 10 minutes)
 
 | # | Where | Do this | You should see |
 |---|-------|---------|----------------|
-| A1 | Browser, **red** login | user `' OR '1'='1' --`, password `x` | Yellow banner *Logged in as selam.g … VULNERABLE*. Point at the SQL box. Then **Log out** |
-| A2 | Browser, **green** login | same input | *Invalid username or password* |
-| A3 | **Red** search | `' UNION SELECT Username, Role + ' \| ' + CONVERT(varchar(200), PasswordHash, 1), 0 FROM dbo.Users --` | List of usernames + hashes |
-| A4 | **Green** search | same input | *No products found* + parameters shown separately |
-| A5 | **Red** search | `'; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' --` then **green** search `Laptop` | Laptop costs **1.00** |
+| A1 | **Security lab** → red login | user `' OR '1'='1' --`, password `x` | Yellow banner *Logged in as selam.g … VULNERABLE*, plus the SQL that was built. Then **Log out** (top bar) |
+| A2 | Security lab → **green** login | same input | *Invalid username or password* |
+| A3 | Security lab → **red** search | `' UNION SELECT Username, Role + ' \| ' + CONVERT(varchar(200), PasswordHash, 1), 0 FROM dbo.Users --` | List of usernames + hashes |
+| A4 | Security lab → **green** search | same input | *No products found* + parameters shown separately |
+| A5 | **Red** search, then **Shop** → *Electronics* | `'; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' --` | The Laptop costs **1.00 ETB** in the real shop |
 | A6 | **Red** search (repair) | `'; UPDATE dbo.Products SET Price = 65000 WHERE SKU = 'EL-LAP-002' --` | Price restored (say: "the attacker could do this too") |
-| B1 | **Green** login | `kidus.w` with a wrong password **5×** | *Account locked after too many failed attempts* |
-| B2 | **Green** login | `selam.g` + demo password → **My orders** | Only orders #1001 and #1009 (RLS). Log out |
-| B3 | **Green** login | `admin.tsehay` + demo password → type the code from the phone | *Second factor…* page, then *Welcome admin.tsehay (password + one-time code)* |
-| C1 | SSMS block **D4** | F5 | *UPDATE permission was denied* / *SELECT permission was denied … Customers* |
-| C2 | SSMS block **D5** | F5 | Addis rows vs Hawassa rows |
-| C3 | SSMS block **D6** | F5 | Real e-mails vs `sXXX@XXXX.com` |
-| D1 | SSMS block **D7** | F5 | ShopDB `encryption_state = 3` |
-| D2 | SSMS block **D8** | F5 | Admin: card numbers · sales: `NULL` |
-| D3 | File Explorer | show the backup folder | `TDE_ShopDB_Cert_xxxx.cer/.pvk`, before/after `.bak` |
-| E1 | SSMS block **D9** | F5 | The audit log shows the attacks you just made (LOGIN_REJECTED_INPUT, ACCOUNT_LOCKED, MFA_SUCCESS…) |
-| E2 | SSMS block **D10** | remove the `--` and press F5 | Unlocks `kidus.w` for the next rehearsal |
+| B1 | **Log in** (top bar) | `selam.g` + demo password | *Welcome selam.g* |
+| B2 | **Shop** → **Cart** | add *Yirgacheffe Coffee* ×2 and *Berbere Spice* → **Cart** → Telebirr → **Place order** | *Order #… was placed*; **My account** shows only Selam's orders (RLS), including the new one with both products. Log out |
+| C1 | **Log in** | `kidus.w` with a wrong password **5×** | *Account locked after too many failed attempts* |
+| C2 | **Log in** | `admin.tsehay` + demo password → type the code from the phone | *Second factor…* page, then *Welcome admin.tsehay (password + one-time code)*. Log out |
+| D1 | **Staff portal** | login `sales_addis` + staff password | Attributes *Sales · Addis Ababa*; ✓ read orders / change status, ✗ prices, hashes, audit log; only Addis orders; card numbers NULL. **Log out of portal** |
+| D2 | **Staff portal** | login `support_dawit` | All regions, but e-mails `sXXX@XXXX.com`; payments denied |
+| D3 | **Staff portal** | login `shop_admin` | ✓ prices, real card numbers; ✗ password hashes, delete audit log, drop table |
+| E1 | SSMS block **D7** | F5 | ShopDB `encryption_state = 3` |
+| E2 | SSMS block **D9** | F5 | The audit log shows what you just did (LOGIN_REJECTED_INPUT, ORDER_PLACED, ACCOUNT_LOCKED, MFA_SUCCESS…) |
+| E3 | SSMS block **D10** | remove the `--` and press F5 | Unlocks `kidus.w` for the next rehearsal |
+
+Optional if time allows: SSMS blocks D4–D6 and D8 show the same RBAC / RLS / masking / encryption results directly in SQL.
 
 ### If something fails (fallbacks)
 
 | Problem | Quick fix (≤ 1 min) | Otherwise |
 |---------|---------------------|-----------|
-| Browser: "can't connect" | The app window was closed. Run `python app.py` again | Show slides 25–26 (screenshots of the same steps) |
-| App error / login always fails | Check `.env` (passwords must match those used by `run_sql.ps1`) | Slides 25–26 |
-| SQL Server not running | `services.msc` → start *SQL Server (MSSQLSERVER)* | Slides 27–30 |
-| Database in a strange state | `.\run_sql.ps1 sql\00_reset.sql` then `.\run_sql.ps1` (about 10 s), then restart the app | Slides 27–30 |
+| Browser: "can't connect" | The app window was closed. Run `python app.py` again | Show slides 25–28 (screenshots of the same steps) |
+| App error / login always fails | Check `.env` (passwords must match those used by `run_sql.ps1`) | Slides 25–28 |
+| Staff portal says "Login failed." | Use `STAFF_PASSWORD` from `.env`; pick one of the five staff logins | Slide 28 |
+| SQL Server not running | `services.msc` → start *SQL Server (MSSQLSERVER)* | Slides 25–32 |
+| Database in a strange state | `.\run_sql.ps1 sql\00_reset.sql` then `.\run_sql.ps1` (about 10 s), then restart the app | Slides 25–32 |
 | Account locked from rehearsal | SSMS block D10 (unlock) | Use another customer, e.g. `liya.t` |
-| MFA code rejected | Phone time: Settings → automatic time. Wait for a fresh code | Slide 30 + explain the flow |
+| MFA code rejected | Phone time: Settings → automatic time. Wait for a fresh code | Slide 32 + explain the flow |
 | Projector text too small | Browser Ctrl + `+`; SSMS Ctrl + mouse wheel | none needed |
 
 **Golden rule:** if a fix takes more than one minute, say *"I have the same result

@@ -372,7 +372,94 @@ BEGIN
     ORDER BY o.OrderDate DESC;
 END
 GO
-PRINT 'Procedures created: app.sp_Login, app.sp_RegisterCustomer, app.sp_SearchProducts, app.sp_PlaceOrder, app.sp_GetMyOrders';
+/* ===========================================================================
+   6. app.sp_PlaceOrderCart  -  checkout of the web shop's shopping cart
+      The cart arrives as JSON, e.g.  [{"p":9,"q":2},{"p":3,"q":1}]
+      Why is this safe? The JSON is a PARAMETER (data). OPENJSON ... WITH
+      converts it into a typed table (INT, INT); anything that is not a
+      number becomes NULL or an error, and is rejected. It is never
+      executed as SQL. Then ALL items are checked and stocked in ONE
+      transaction: either the whole order is created, or nothing is.
+      Like sp_PlaceOrder, the customer comes from SESSION_CONTEXT.
+   =========================================================================== */
+CREATE OR ALTER PROCEDURE app.sp_PlaceOrderCart
+    @ItemsJson     NVARCHAR(2000),
+    @PaymentMethod NVARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    DECLARE @CustomerID INT = CAST(SESSION_CONTEXT(N'CustomerID') AS INT);
+    DECLARE @Items TABLE (ProductID INT NOT NULL PRIMARY KEY, Quantity INT NOT NULL, UnitPrice DECIMAL(10,2) NULL);
+    DECLARE @Region NVARCHAR(30), @OrderID INT, @Total DECIMAL(12,2), @n INT;
+
+    IF @CustomerID IS NULL
+    BEGIN SELECT 1 AS ResultCode, N'Please log in as a customer first.' AS Message, NULL AS OrderID; RETURN; END
+    IF @PaymentMethod IS NULL OR @PaymentMethod NOT IN (N'Card', N'Telebirr', N'CBE Birr', N'Cash on Delivery')
+    BEGIN SELECT 1 AS ResultCode, N'Unknown payment method.' AS Message, NULL AS OrderID; RETURN; END
+    IF @ItemsJson IS NULL OR ISJSON(@ItemsJson) = 0
+    BEGIN SELECT 1 AS ResultCode, N'Your cart could not be read.' AS Message, NULL AS OrderID; RETURN; END
+
+    BEGIN TRY
+        -- typed conversion of the JSON data (duplicate products -> PK error -> rejected)
+        INSERT @Items (ProductID, Quantity)
+        SELECT ProductID, Quantity
+        FROM OPENJSON(@ItemsJson) WITH (ProductID INT '$.p', Quantity INT '$.q');
+
+        SELECT @n = COUNT(*) FROM @Items;
+        IF @n NOT BETWEEN 1 AND 10
+           OR EXISTS (SELECT 1 FROM @Items WHERE ProductID IS NULL OR Quantity IS NULL OR Quantity NOT BETWEEN 1 AND 10)
+        BEGIN
+            SELECT 1 AS ResultCode, N'Cart must have 1-10 products, each with quantity 1-10.' AS Message, NULL AS OrderID;
+            RETURN;
+        END
+
+        BEGIN TRANSACTION;
+            -- take stock for every line; all lines must succeed
+            UPDATE p SET p.Stock = p.Stock - i.Quantity
+            FROM dbo.Products AS p JOIN @Items AS i ON i.ProductID = p.ProductID
+            WHERE p.IsActive = 1 AND p.Stock >= i.Quantity;
+
+            IF @@ROWCOUNT <> @n
+            BEGIN
+                ROLLBACK TRANSACTION;
+                SELECT 1 AS ResultCode, N'Some products are not available in that quantity.' AS Message, NULL AS OrderID;
+                RETURN;
+            END
+
+            UPDATE i SET i.UnitPrice = p.Price
+            FROM @Items AS i JOIN dbo.Products AS p ON p.ProductID = i.ProductID;
+            SELECT @Total = SUM(Quantity * UnitPrice) FROM @Items;
+            SELECT @Region = Region FROM dbo.Customers WHERE CustomerID = @CustomerID;   -- RLS: own row only
+
+            INSERT dbo.Orders (CustomerID, Status, ShipRegion, TotalAmount)
+            VALUES (@CustomerID, CASE WHEN @PaymentMethod = N'Cash on Delivery' THEN N'Pending' ELSE N'Paid' END,
+                    @Region, @Total);
+            SET @OrderID = SCOPE_IDENTITY();
+
+            INSERT dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice)
+            SELECT @OrderID, ProductID, Quantity, UnitPrice FROM @Items;
+
+            INSERT dbo.Payments (OrderID, Amount, Method, Status)   -- never a card number (gateway / PCI DSS)
+            VALUES (@OrderID, @Total, @PaymentMethod,
+                    CASE WHEN @PaymentMethod = N'Cash on Delivery' THEN N'Pending' ELSE N'Completed' END);
+
+            INSERT dbo.AuditLog (EventType, AppUsername, Details)
+            VALUES (N'ORDER_PLACED', NULL, N'Customer ' + CAST(@CustomerID AS NVARCHAR(10)) + N' placed order '
+                    + CAST(@OrderID AS NVARCHAR(10)) + N' (' + CAST(@n AS NVARCHAR(5)) + N' products, cart checkout)');
+        COMMIT TRANSACTION;
+
+        SELECT 0 AS ResultCode, N'Order placed successfully.' AS Message, @OrderID AS OrderID;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        INSERT dbo.AuditLog (EventType, AppUsername, Details)
+        VALUES (N'ERROR', NULL, LEFT(N'sp_PlaceOrderCart: ' + ERROR_MESSAGE(), 400));
+        SELECT 1 AS ResultCode, N'Your order could not be placed. Please check your cart.' AS Message, NULL AS OrderID;
+    END CATCH
+END
+GO
+PRINT 'Procedures created: app.sp_Login, app.sp_RegisterCustomer, app.sp_SearchProducts, app.sp_PlaceOrder, app.sp_PlaceOrderCart, app.sp_GetMyOrders';
 GO
 
 /* ===========================================================================
@@ -440,6 +527,10 @@ EXEC app.sp_PlaceOrder @ProductID = 9, @Quantity = 2, @PaymentMethod = N'Telebir
 EXEC app.sp_PlaceOrder @ProductID = 2, @Quantity = 50, @PaymentMethod = N'Card';
 PRINT 'Liya''s orders (procedure has no WHERE clause - RLS filters):';
 EXEC app.sp_GetMyOrders;
+PRINT 'Cart checkout (2 products in one order):';
+EXEC app.sp_PlaceOrderCart @ItemsJson = N'[{"p":10,"q":2},{"p":6,"q":1}]', @PaymentMethod = N'CBE Birr';
+PRINT 'Cart with an injection attempt inside the JSON -> not a number, rejected:';
+EXEC app.sp_PlaceOrderCart @ItemsJson = N'[{"p":"1; DROP TABLE dbo.Orders","q":1}]', @PaymentMethod = N'Telebirr';
 PRINT 'Switch the session to customer 1 (Selam) - different rows:';
 EXEC sys.sp_set_session_context @key = N'CustomerID', @value = 1;
 EXEC app.sp_GetMyOrders;

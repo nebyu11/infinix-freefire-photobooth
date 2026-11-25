@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="center">
+  <form class="panel good narrow" method="post" action="{{ url_for('login') }}">
+    <h2>Log in</h2>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label>Username <input name="username" autocomplete="username" required></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="wide">Log in</button>
+    <p class="muted">New here? <a href="{{ url_for('register') }}">Create an account</a></p>
+    <p class="muted">🔒 Checked by <code>app.sp_Login</code>: salted hash, 5 wrong attempts lock the account for 15 minutes,
+       and accounts with MFA also need a one-time code.</p>
+  </form>
+</div>
+{% endblock %}

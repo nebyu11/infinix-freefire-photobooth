@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid">
+  <form class="panel staff narrow" method="post" action="{{ url_for('staff_login') }}">
+    <h2>Staff portal</h2>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label>SQL Server login
+      <select name="login">{% for l in logins %}<option>{{ l }}</option>{% endfor %}</select>
+    </label>
+    <label>Password <input name="password" type="password" required></label>
+    <button class="wide staffbtn">Log in to SQL Server</button>
+    <p class="muted">🔒 Staff log in with their <b>own SQL Server login</b> (password policy applies).
+       Every query on the dashboard then runs with that login's real permissions, so SQL Server itself
+       decides what you may see. Your password is kept only in this server's memory, never in the cookie.</p>
+  </form>
+  <div class="panel">
+    <h3>Who is who</h3>
+    <table>
+      <tr><th>Login</th><th>Person</th><th>Role</th><th>Attributes</th></tr>
+      <tr><td>shop_admin</td><td>Tsehay Alemu</td><td>admin_role</td><td>Admin · ALL</td></tr>
+      <tr><td>sales_addis</td><td>Abebe Kebede</td><td>sales_role</td><td>Sales · Addis Ababa</td></tr>
+      <tr><td>sales_hawassa</td><td>Hana Tadesse</td><td>sales_role</td><td>Sales · Hawassa</td></tr>
+      <tr><td>support_dawit</td><td>Dawit Mengistu</td><td>support_role</td><td>Support · ALL</td></tr>
+      <tr><td>auditor_meron</td><td>Meron Haile</td><td>auditor_role</td><td>Audit · ALL</td></tr>
+    </table>
+    <p class="muted">Log in as different people and compare the same dashboard.</p>
+  </div>
+</div>
+{% endblock %}

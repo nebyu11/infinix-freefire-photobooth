@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="whoami">
+  <div>
+    <div class="muted">Connected to SQL Server as</div>
+    <h2>{{ me.DbUser }} <span class="muted">· {{ me.FullName }}</span></h2>
+    <div class="attrs">
+      <span class="attr">Role: <b>{{ me.Roles or '-' }}</b></span>
+      <span class="attr">Department: <b>{{ me.Department }}</b></span>
+      <span class="attr">Region: <b>{{ me.Region }}</b></span>
+      <span class="attr">Active: <b>{{ 'yes' if me.IsActive else 'no' }}</b></span>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('staff_logout') }}">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="secondary">Log out of portal</button>
+  </form>
+</section>
+
+<h3>What does SQL Server let me do? <small class="muted">each test runs in a transaction that is always rolled back</small></h3>
+<div class="checks">
+  {% for c in checks %}
+  <div class="check {{ 'yes' if c.ok else 'no' }}" title="{{ c.sql }}">
+    <span class="mark">{{ '✓' if c.ok else '✗' }}</span>
+    <div><b>{{ c.label }}</b><br><span class="muted">{{ c.detail }}</span></div>
+  </div>
+  {% endfor %}
+</div>
+
+{% for p in panels %}
+<section class="staffpanel">
+  <h3>{{ p.title }} {% if not p.error %}<span class="pill">{{ p.rows|length }} rows</span>{% endif %}</h3>
+  <p class="muted">{{ p.why }}</p>
+  {% if p.error %}
+    <div class="denied">⛔ Denied by SQL Server: {{ p.error }}</div>
+  {% else %}
+  <div class="scroll">
+  <table>
+    {% if p.rows %}<tr>{% for k in p.rows[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr>{% endif %}
+    {% for r in p.rows %}
+    <tr>{% for k, v in r.items() %}<td class="{{ 'nullv' if v is none and k == 'CardNumber' }}">{{ 'NULL' if v is none else v }}</td>{% endfor %}</tr>
+    {% else %}<tr><td class="muted">No rows visible to you.</td></tr>{% endfor %}
+  </table>
+  </div>
+  {% endif %}
+  <details class="sqlsmall"><summary>SQL</summary><code>{{ p.sql }}</code></details>
+</section>
+{% endfor %}
+{% endblock %}

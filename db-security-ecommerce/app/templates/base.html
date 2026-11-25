@@ -3,32 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ShopDB Security Demo</title>
+  <title>ShopDB · Ethiopian online shop</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <header>
-  <a class="brand" href="{{ url_for('index') }}">ShopDB <span>security demo</span></a>
+  <a class="brand" href="{{ url_for('shop') }}">Shop<b>DB</b> <span>Ethiopian goods, delivered safely</span></a>
   <nav>
+    <a href="{{ url_for('shop') }}">Shop</a>
+    <a href="{{ url_for('cart') }}">Cart <span class="pill">{{ cart_count() }}</span></a>
     {% if session.user %}
-      <span class="who">{{ session.user.username }} · {{ session.user.role }} · via <b>{{ session.user.via }}</b></span>
-      {% if session.user.customer_id %}<a href="{{ url_for('orders') }}">My orders</a>{% endif %}
-      <a href="{{ url_for('account') }}">Account &amp; MFA</a>
-      <form method="post" action="{{ url_for('logout') }}" class="inline">
-        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-        <button class="link">Log out</button>
-      </form>
+      <a href="{{ url_for('account') }}">My account</a>
     {% else %}
+      <a href="{{ url_for('login_page') }}">Log in</a>
       <a href="{{ url_for('register') }}">Register</a>
     {% endif %}
+    <a href="{{ url_for('staff') }}" class="staff-link">Staff portal</a>
+    {% if vuln_enabled %}<a href="{{ url_for('lab') }}" class="lab-link">Security lab</a>{% endif %}
   </nav>
 </header>
+{% if session.user %}
+<div class="userbar">
+  Logged in as <b>{{ session.user.username }}</b> ({{ session.user.role }}) · via <b>{{ session.user.via }}</b>
+  <form method="post" action="{{ url_for('logout') }}" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="link">Log out</button>
+  </form>
+</div>
+{% endif %}
 <main>
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in msgs %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
   {% endwith %}
-  {% if fatal %}<div class="flash error">{{ fatal }}</div>{% endif %}
   {% block content %}{% endblock %}
 </main>
+<footer>ShopDB · Database Security practical implementation · SQL Server 2022 · demo shop, no real payments</footer>
 </body>
 </html>

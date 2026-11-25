@@ -17,6 +17,11 @@ const {
 const ROOT = path.resolve(__dirname, "..");
 const SHOT = (p) => path.join(ROOT, "screenshots", p);
 const IMG = (p) => path.join(__dirname, "img", p);
+async function cropBox(src, name, left, top, width, height) {
+  const out = IMG(name);
+  await sharp(src).extract({ left, top, width, height }).toFile(out);
+  return out;
+}
 
 // A4, 1-inch margins -> content width 9026 DXA (6.27 in)
 const CONTENT_DXA = 9026;
@@ -122,14 +127,14 @@ function table(headers, rows, widths, opts = {}) {
 
   const toc = [
     new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun("Table of contents")] }),
+    P([new TextRun({ text: "If the page numbers below are missing, right-click the list in Word and choose \"Update Field\" → \"Update entire table\".", italics: true, size: 18, color: GREY })], { spacing: { after: 120 } }),
     new TableOfContents("Table of contents", { hyperlink: true, headingStyleRange: "1-2" }),
-    P(I("If the table of contents is empty, right-click it in Word and choose \"Update Field\" → \"Update entire table\"."), { spacing: { before: 200 } }),
   ];
 
   // =========================== 1. INTRODUCTION =============================
   H1("1. Introduction");
   para("This report documents my practical implementation of the concepts in Chapter 2 of the Database Security course: access control, authentication and data protection. I chose e-commerce as the application area and built a complete, working, security-hardened database for a fictional Ethiopian online shop called ShopDB. It stores customers, products, orders, payments (including card numbers) and staff accounts.");
-  para("Every result in this report comes from the real system. All screenshots and outputs were captured while the scripts and the demo web application were running. Nothing was edited by hand.");
+  para("To show the security controls in a realistic setting, I also built a small working web shop on top of the database: a storefront, shopping cart and checkout, customer accounts, a staff portal, and a \"security lab\" page for the SQL-injection demonstration. Every result in this report comes from the real system. All screenshots and outputs were captured while the scripts and the demo web application were running. Nothing was edited by hand.");
   H2("1.1 Objectives");
   bullets(["Identify the risks to the shop's digital assets and plan a control for each one.",
     "Create the database with proper constraints, a login (user) table and realistic sample data.",
@@ -157,9 +162,9 @@ function table(headers, rows, widths, opts = {}) {
     ["DBMS", "Microsoft SQL Server 2022 Developer (CU28)", "Free, full-featured edition. TDE is not available in Express."],
     ["Command-line tool", "sqlcmd 18 (ODBC)", "Runs the numbered scripts; passes passwords as variables"],
     ["Management tool", "SQL Server Management Studio (SSMS)", "Live demo queries (sql/99_demo_queries.sql)"],
-    ["Demo application", "Python 3 + Flask 3.1, pyodbc 5.5 (ODBC Driver 18)", "Small and readable; parameterized queries with \"?\""],
+    ["Web shop", "Python 3 + Flask 3.1, pyodbc 5.5 (ODBC Driver 18)", "Storefront, cart, checkout, accounts, staff portal, security lab; parameterized queries with \"?\""],
     ["MFA library", "pyotp 2.12 (TOTP, RFC 6238) + cryptography (Fernet)", "Google Authenticator-compatible codes; encrypted secret"],
-    ["Testing", "smoke_test.py (22 automated checks)", "Proves every security behaviour end-to-end"],
+    ["Testing", "smoke_test.py (37 automated checks)", "Proves every security behaviour end-to-end"],
   ], [2000, 3500, 3526], { caption: "Tools and versions" });
   para([B("Development note: "), "the project was developed and tested with SQL Server 2022 Developer running in Docker. The same scripts run on a Windows installation of SQL Server 2022 Developer (the README explains both). The only difference I observed is the error number for a rejected weak login password: 15116/15118 on Windows and 33062 on Linux, with the same message text."]);
   H2("2.2 Project structure");
@@ -169,13 +174,26 @@ function table(headers, rows, widths, opts = {}) {
     ["sql/06b_tde_lost_cert_drill.sql", "Disaster-recovery drill: what happens if the TDE certificate is lost"],
     ["sql/99_demo_queries.sql", "Short blocks (D1–D10) for the live SSMS demo"],
     ["run_sql.ps1 / run_sql.sh", "Runner: reads passwords from .env and passes them to sqlcmd (-v)"],
-    ["app/", "Flask demo: vulnerable vs hardened login/search, orders, registration, MFA; smoke_test.py"],
+    ["app/", "ShopDB web shop (Flask): storefront, cart, checkout, accounts, MFA, staff portal, security lab; smoke_test.py"],
     ["docs/", "Risk checklist, this report, speaker notes, Q&A cheat sheet"],
     ["presentation/", "Slides (.pptx) with speaker notes"],
     ["screenshots/", "All figures used in this report"],
   ], [3300, 5726], { caption: "Project structure" });
   H2("2.3 Secrets management");
   para("No real password or key is written in any .sql or .py file. The scripts contain sqlcmd variables such as $(APP_PASSWORD). The runner script reads the real values from a .env file and passes them with -v NAME=\"value\". The .env file is listed in .gitignore, so it is never committed, and a template (.env.example) shows which values are needed. This follows the lecture's secure-coding rule: \"Secrets management: store credentials in secure vaults, not in source code.\"");
+  H2("2.4 The ShopDB web shop");
+  para("The web shop is the \"front door\" through which customers and staff use the database. Every page is designed to make one security control visible:");
+  table(["Page", "What the user does", "Security control it shows"], [
+    ["Storefront ( / )", "Search, filter by category, sort", "Parameterized procedure app.sp_SearchProducts, allow-listed sort column"],
+    ["Cart & checkout", "Add products, choose Telebirr / CBE Birr / card / cash, place order", "app.sp_PlaceOrderCart: typed JSON, one transaction, customer taken from SESSION_CONTEXT"],
+    ["Log in / Register", "Create an account, log in", "Password policy, salted hash, lockout, MFA"],
+    ["My account", "See my orders, change password, set up MFA", "Row-Level Security, password history, TOTP"],
+    ["Staff portal", "Staff log in with their own SQL Server login", "RBAC, ABAC (RLS), masking and column encryption decided by SQL Server itself"],
+    ["Security lab (localhost only)", "Try SQL-injection payloads on a vulnerable and a hardened form", "Why parameters + least privilege matter"],
+  ], [2000, 3200, 3826], { caption: "Pages of the web shop and the control each one demonstrates", boldFirst: true });
+  para("The website itself connects to SQL Server as shop_app, which may only execute the procedures in schema app. Staff do not use shop_app: the staff portal opens the connection with the staff member's own SQL Server login, so every query runs with that person's real permissions. The security lab uses a separate, deliberately over-privileged login (legacy_app). It is only available on the local computer and only when ENABLE_VULNERABLE_DEMO=1.");
+  await figure(SHOT("app/01_storefront.png"), "The ShopDB storefront",
+    "products are loaded through app.sp_SearchProducts with parameters. The search box, the category chips and the sort order cannot change the SQL text, and the website login has no right to read the Products table directly.");
   await figure(SHOT("sql/sql_00_rebuild.png"), "The whole database is built from an empty server with one command",
     "all seven scripts ran in order without a single error (the runner uses sqlcmd -b, which stops at the first unexpected error). A full rebuild takes about 10 seconds, and every script can safely be run again (idempotent).");
 
@@ -269,12 +287,32 @@ function table(headers, rows, widths, opts = {}) {
     "one SELECT on Orders returns 10 rows for admin, auditor and support (region ALL), 4 rows for sales_addis (Addis Ababa only) and 3 rows for sales_hawassa (Hawassa only). The same SELECT on Customers shows sales_addis only Addis customers with real contact data, while support_dawit sees all customers but with masked e-mail (sXXX@XXXX.com) and phone (+251XXXXXX567).");
   await figure(SHOT("sql/sql_04_attribute_change.png"), "Changing an attribute (not a role) changes access immediately",
     "when Abebe is moved to the Hawassa branch, only his Region attribute changes and he immediately sees the Hawassa orders. When he is deactivated (IsActive = 0), he sees nothing. No role or GRANT was changed: this is what makes the control attribute-based.");
-  await figure(SHOT("app/09_my_orders_rls.png"), "In the web app, a customer sees only their own orders",
-    "the procedure app.sp_GetMyOrders has no WHERE clause at all. Row-Level Security adds the filter automatically, using the CustomerID that the app stored in SESSION_CONTEXT at login. Selam sees only her orders (#1001, #1009, plus one placed during testing).");
+  await figure(SHOT("app/09_my_orders_rls.png"), "In the web shop, a customer sees only their own orders",
+    "the procedure app.sp_GetMyOrders has no WHERE clause at all. Row-Level Security adds the filter automatically, using the CustomerID that the app stored in SESSION_CONTEXT at login. Selam sees only her own orders (#1001, #1009 and the order she just placed), never another customer's.");
+
+  H2("6.3 Access control seen through the staff portal");
+  para("To make RBAC and ABAC visible outside SSMS, the web shop has a staff portal. Staff log in with their own SQL Server login (CHECK_POLICY applies). The portal runs exactly the same queries for every person, so any difference in the result comes from SQL Server alone:");
+  bullets([[B("Identity card: "), "the login, its role and its ABAC attributes (Department, Region, IsActive), read through sec.sp_MyAttributes."],
+    [B("\"What does SQL Server let me do?\": "), "eight actions (read orders, change order status, change prices, decrypt card numbers, read password hashes, read the audit log, delete the audit log, drop a table). Each runs inside a transaction that is always rolled back, so nothing is ever changed."],
+    [B("Data panels: "), "Orders, Customers, Payments (with decryption) and the Audit log. Each shows the rows SQL Server returns, or the exact \"permission denied\" message."]]);
+  para("Security of the portal itself: only the five staff logins are accepted (never sa, shop_app or legacy_app). Every failure gives the same message, \"Login failed.\". The SQL password is never put in the browser cookie: it is kept only in the server's memory under a random token, and expires after 30 minutes or at logout.");
+  await figure(SHOT("app/17_staff_login.png"), "Staff portal login: staff authenticate directly against SQL Server", null);
+  await figure(await cropBox(SHOT("app/18_staff_sales_addis.png"), "r_staff_sales.png", 150, 160, 2260, 1080),
+    "Staff portal as sales_addis (Sales · Addis Ababa)",
+    "Abebe may read orders (only the Addis Ababa ones, because of Row-Level Security) and change order status, but SQL Server denies changing prices, reading password hashes, reading or deleting the audit log and dropping a table. He can select the card column, but 0 card numbers are decrypted because he has no permission on the key.");
+  await figure(await cropBox(SHOT("app/18_staff_support_dawit.png"), "r_staff_support_data.png", 150, 2340, 2260, 1740),
+    "Staff portal as support_dawit: masked customer data, payments and audit log denied",
+    "support staff (Region = ALL) see customers from every region, but e-mail and phone are masked by Dynamic Data Masking (sXXX@XXXX.com, +251XXXXXX567). Payments and the audit log are refused by SQL Server.");
+  await figure(await cropBox(SHOT("app/18_staff_shop_admin.png"), "r_staff_admin.png", 150, 160, 2260, 1080),
+    "Staff portal as shop_admin",
+    "the administrator may change prices and decrypts all card numbers (key permission), but even the admin cannot read password hashes, delete the audit log or drop a table, because admin_role is deliberately not db_owner.");
+  await figure(await cropBox(SHOT("app/18_staff_auditor_meron.png"), "r_staff_auditor.png", 150, 160, 2260, 1080),
+    "Staff portal as auditor_meron",
+    "the auditor can read everything including the audit trail, but every change (order status, prices, deleting the log) is denied: the auditor role is read-only.");
 
   // =========================== 7. SQL INJECTION ============================
   H1("7. Stored procedures, query hardening and SQL injection");
-  para("SQL injection happens when an application glues user input into the SQL text. The input \"' OR '1'='1' --\" turns WHERE Username = '…' into a condition that is always true, and comments out the rest of the query. To demonstrate this, the Flask application has two clearly separated paths:");
+  para("SQL injection happens when an application glues user input into the SQL text. The input \"' OR '1'='1' --\" turns WHERE Username = '…' into a condition that is always true, and comments out the rest of the query. To demonstrate this, the web shop has a Security lab page with two clearly separated paths:");
   bullets([[B("Red, vulnerable path (lab only): "), "builds SQL with string concatenation, connects as the over-privileged legacy_app login, and shows raw database errors. It is only enabled when ENABLE_VULNERABLE_DEMO=1 and only answers requests from 127.0.0.1."],
     [B("Green, hardened path: "), "calls stored procedures with parameters, connects as shop_app (EXECUTE-only), and shows generic error messages."]]);
   H2("7.1 Query-hardening techniques used (script 05_stored_procedures.sql)");
@@ -285,28 +323,30 @@ function table(headers, rows, widths, opts = {}) {
     [B("Least privilege + schema qualification: "), "the website can only EXECUTE app.* procedures, and every object is schema-qualified (dbo., app.)."],
     [B("Account lockout and safe messages: "), "5 wrong passwords lock the account for 15 minutes. The message is always \"Invalid username or password\", and unknown users are hashed too, so timing reveals nothing."],
     [B("No IDOR: "), "the customer is never a form field. Orders use the CustomerID from SESSION_CONTEXT."]]);
-  await figure(SHOT("app/01_home.png"), "The demo application: hardened (green) and vulnerable (red) forms side by side",
+  await figure(SHOT("app/00_security_lab.png"), "The Security lab page: hardened (green) and vulnerable (red) forms side by side",
     "both forms receive exactly the same input during the demo, so the difference in outcome comes only from how the input reaches the database.");
   await figure(SHOT("app/02_vulnerable_login_bypassed.png"), "Attack 1 on the vulnerable login: ' OR '1'='1' -- logs in without a password",
     "the red box shows the SQL that the vulnerable code built. The WHERE clause became always true and the password check was commented out, so the attacker is logged in as the first user (selam.g) without knowing any password.");
   await figure(SHOT("app/03_hardened_login_rejected.png"), "The same input on the hardened login is rejected",
     "app.sp_Login received the input as a parameter, its allow-list validation rejected the quote characters, and the user only sees the generic message \"Invalid username or password\". The attempt is also written to the audit log.");
-  await figure(IMG("union_dump_crop.png"), "Attack 2 on the vulnerable search: a UNION injection dumps every username and password hash",
+  await figure(await cropBox(SHOT("app/04_vulnerable_search_union_dump.png"), "r_union_dump.png", 160, 2540, 2240, 1200), "Attack 2 on the vulnerable search: a UNION injection dumps every username and password hash",
     "the attacker appends a second SELECT to the product query and reads the Users table through the search results. The salted, iterated hashes are hard to crack, but they should never leak.");
   await figure(SHOT("app/05_hardened_search_union_blocked.png"), "The same UNION payload on the hardened search returns nothing",
     "the parameters are sent separately from the SQL text (shown in the green box), so the payload is only a strange product name, and 0 rows are returned.");
   await figure(SHOT("app/06_vulnerable_error_leak.png"), "Attack 3: error-based injection leaks internal information",
     "the vulnerable path shows the raw database error, which here reveals the exact SQL Server version. The hardened path never shows internal errors.");
-  await figure(SHOT("app/07b_laptop_now_costs_1_ETB.png"), "Attack 4: a stacked UPDATE through the vulnerable search changed a price to 1 ETB",
-    "the payload '; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' -- ran a second statement, so the Laptop Pro now costs 1.00 ETB. That is real fraud. It worked only because the vulnerable login has write rights on every table.");
+  await figure(SHOT("app/07b_laptop_now_costs_1_ETB.png"), "Attack 4: a stacked UPDATE through the vulnerable search changed a price in the real shop to 1 ETB",
+    "the payload '; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' -- ran a second statement, and the storefront now sells the Laptop Pro for 1.00 ETB. That is real fraud. It worked only because the vulnerable login has write rights on every table.");
   await figure(SHOT("sql/sql_05_procedures.png"), "Procedure tests, run as the website login (shop_app)",
     "the injection payloads used as usernames are rejected; five wrong passwords lock the account and even the correct password is refused while locked; the UNION payload in the search returns 0 rows; a DROP TABLE hidden in the sort parameter is ignored (falls back to sorting by Name); a direct SELECT by the website login is denied; and the Products table still exists.");
   await figure(SHOT("app/08_account_locked_after_5_attempts.png"), "Account lockout in the web application after 5 wrong passwords",
     "this stops online brute-force and password-guessing attacks (lecture: \"Account lockout policies should be used\").");
   await figure(SHOT("sql/sql_05_register_orders.png"), "Registration and order procedures with validation and SESSION_CONTEXT",
-    "registration rejects a weak password, accepts a valid one, refuses a duplicate username or e-mail (UNIQUE constraint) and rejects a username containing an injection attempt. Orders are placed for the customer stored in the session, a quantity of 50 is rejected, and switching the session customer shows completely different orders.");
-  await figure(SHOT("app/10b_order_placed.png"), "Placing an order through the hardened path",
-    "the order is created by app.sp_PlaceOrder in one transaction: stock check, order, order line, payment and audit entry. The customer is taken from the session, never from the form.");
+    "registration rejects a weak password, accepts a valid one, refuses a duplicate username or e-mail (UNIQUE constraint) and rejects a username containing an injection attempt. Orders are placed for the customer stored in the session, a quantity of 50 is rejected, a two-product cart becomes one order, a cart with an injection attempt inside the JSON is rejected, and switching the session customer shows completely different orders.");
+  await figure(SHOT("app/10a_cart.png"), "Shopping cart and checkout",
+    "the cart is kept in the signed session cookie and validated twice: by the web shop (1-10 products, quantity 1-10) and again inside the database procedure. The customer never types or chooses a customer number.");
+  await figure(SHOT("app/10b_order_placed.png"), "Order placed through app.sp_PlaceOrderCart, visible in My account",
+    "the whole cart (2 × Yirgacheffe Coffee + 1 × Berbere Spice) became one order in one transaction: stock check for every line, order, order lines, payment and audit entry. The cart travels as JSON data that OPENJSON converts into typed numbers, so an injection attempt inside the cart is rejected (tested in 05_stored_procedures.sql). The customer comes from SESSION_CONTEXT, and My account (Row-Level Security) shows only Selam's orders.");
 
   // =========================== 8. ENCRYPTION ===============================
   H1("8. Transparent Data Encryption and column encryption");
@@ -357,13 +397,13 @@ function table(headers, rows, widths, opts = {}) {
   H1("10. Auditing and monitoring");
   para("Every security-relevant event is written to dbo.AuditLog by the stored procedures: successful and failed logins, rejected input, lockouts, password changes, registrations, orders, MFA events and internal errors. The database login that performed the action is recorded automatically (ORIGINAL_LOGIN()). The log is append-only: UPDATE and DELETE are denied to every role, including admin, and auditors have read-only access.");
   await figure(SHOT("sql/sql_audit_log.png"), "The audit log after running the automated tests",
-    "the complete story of a test user is visible: registration, MFA set-up, password login, a wrong MFA code, a successful MFA login, four failed passwords, the lockout and a blocked attempt while locked. The rejected injection attempt (LOGIN_REJECTED_INPUT) is recorded too. (The jump in AuditID numbers is normal: SQL Server pre-allocates identity values and skips some after a restart.)");
+    "the complete story of a test user is visible: registration, MFA set-up, password login, a wrong MFA code, a successful MFA login, four failed passwords, the lockout and a blocked attempt while locked. Orders placed through the cart checkout and rejected injection attempts (LOGIN_REJECTED_INPUT) are recorded too. (Jumps in AuditID numbers are normal: SQL Server pre-allocates identity values and skips some after a restart.)");
 
   // =========================== 11. TESTING =================================
   H1("11. Testing and verification");
-  para("To make sure everything really works, and not only on my screen, I wrote app/smoke_test.py. It uses the running website like a browser and checks 22 security behaviours. I also re-ran every SQL script a second time to prove they are idempotent, and rebuilt everything from an empty server several times.");
-  await figure(SHOT("sql/smoke_test.png"), "22 out of 22 automated end-to-end security checks pass",
-    "SQL-injection attacks succeed on the vulnerable path and fail on the hardened path; the sort-column injection is ignored; RLS shows only the customer's own orders; order validation works; forms without the CSRF token are refused; the password policy rejects a weak password; MFA works (enable, password-only refused, wrong code rejected, correct code accepted); and lockout blocks even the correct password.");
+  para("To make sure everything really works, and not only on my screen, I wrote app/smoke_test.py. It uses the running web shop like a browser and checks 37 security behaviours. I also re-ran every SQL script a second time to prove they are idempotent, and rebuilt everything from an empty server several times.");
+  await figure(SHOT("sql/smoke_test.png"), "37 out of 37 automated end-to-end security checks pass",
+    "storefront search, filters and the sort-parameter injection; SQL-injection attacks succeed on the vulnerable path and fail on the hardened path; RLS shows only the customer's own orders; cart, validation and checkout work; forms without the CSRF token are refused; the password policy rejects a weak password; MFA works; lockout blocks even the correct password; and in the staff portal every staff member gets exactly the permissions of their role and attributes.");
   table(["Test area", "Result"], [
     ["Constraints (4 invalid inserts)", "All 4 rejected"],
     ["Password policy (SQL logins + website)", "Weak rejected, strong accepted, reuse blocked"],
@@ -375,7 +415,9 @@ function table(headers, rows, widths, opts = {}) {
     ["Certificate loss drill", "Msg 33111 without certificate; success after restoring it"],
     ["Column encryption", "Admin decrypts; sales gets NULL"],
     ["MFA", "Password alone refused; TOTP required; secret stored encrypted"],
-    ["Automated smoke test", "22/22 passed"],
+    ["Web shop cart & checkout", "Multi-product order in one transaction; JSON injection rejected"],
+    ["Staff portal (5 staff logins)", "Each person sees exactly their RBAC/ABAC permissions"],
+    ["Automated smoke test", "37/37 passed"],
     ["Idempotency", "All scripts re-run without errors; full rebuild ≈ 10 s"],
   ], [5200, 3826], { caption: "Summary of test results", boldFirst: true });
 
@@ -400,7 +442,7 @@ function table(headers, rows, widths, opts = {}) {
     [B("Query hardening: "), "stored procedures, parameters, allow-list validation and safe error handling."],
     [B("Data protection: "), "TDE for data at rest, column encryption for card numbers, certificate backup and data classification."],
     [B("Monitoring: "), "an append-only audit log."]]);
-  para("The live comparison of the vulnerable and the hardened paths shows the difference clearly. The same attacker input that logs in without a password, steals password hashes and changes prices on the vulnerable path is completely harmless on the hardened path. Every result is reproducible: one command rebuilds the system, and 22 automated checks confirm that it behaves as described.");
+  para("The live comparison of the vulnerable and the hardened paths shows the difference clearly. The same attacker input that logs in without a password, steals password hashes and changes prices on the vulnerable path is completely harmless on the hardened path. The same controls protect a realistic web shop: customers shop, pay and see only their own orders, and in the staff portal the same page shows each employee exactly what their role and attributes allow. Every result is reproducible: one command rebuilds the system, and 37 automated checks confirm that it behaves as described.");
 
   // =========================== APPENDICES ==================================
   H1("Appendix A: How to run the project");
@@ -408,8 +450,9 @@ function table(headers, rows, widths, opts = {}) {
     "Copy .env.example to .env and set your own strong passwords and keys.",
     "In PowerShell, in the project folder: .\\run_sql.ps1 (runs 01 → 07). Optional: .\\run_sql.ps1 sql\\06b_tde_lost_cert_drill.sql",
     "Start the app: cd app → python -m venv .venv → .\\.venv\\Scripts\\Activate.ps1 → pip install -r requirements.txt → python app.py, then open http://127.0.0.1:5000",
-    "Verify: python smoke_test.py should print 22/22 checks passed.",
-    "Live demo queries: open sql/99_demo_queries.sql in SSMS and run blocks D1–D10."]);
+    "Verify: python smoke_test.py should print 37/37 checks passed.",
+    "Live demo queries: open sql/99_demo_queries.sql in SSMS and run blocks D1–D10.",
+    "Staff portal: click \"Staff portal\", choose a staff login (e.g. sales_addis) and enter STAFF_PASSWORD from .env."]);
   para("Full details, expected output for every script and troubleshooting are in README.md.");
   H2("Sample website accounts (password = DEMO_USER_PASSWORD from .env)");
   table(["Username", "Role", "Notes"], [

@@ -35,18 +35,20 @@ There are two sets:
 | ☐ | `w18_app_vuln_login.png` | 05 | Browser: red login with `' OR '1'='1' --` → "Logged in … VULNERABLE" + SQL text |
 | ☐ | `w19_app_secure_login.png` | 05 | Green login with the same payload → "Invalid username or password" |
 | ☐ | `w20_app_union.png` | 05 | Red search with the UNION payload → usernames + hashes listed |
+| ☐ | `w21b_app_staff_portal.png` | 04 | Staff portal as `sales_addis` and as `support_dawit` (two screenshots) |
 | ☐ | `w21_app_lockout.png` | 05 | Green login after 5 wrong passwords → "Account locked" |
 | ☐ | `w22_mfa_qr.png` | 07 | Account & MFA → QR code page |
 | ☐ | `w23_mfa_phone.png` | 07 | Photo of your phone's authenticator showing *ShopDB Demo* |
 | ☐ | `w24_audit.png` | all | Block D9 → audit log after the web demo |
-| ☐ | `w25_smoke.png` | all | Terminal: `python smoke_test.py` → **22/22 checks passed** |
+| ☐ | `w25_smoke.png` | all | Terminal: `python smoke_test.py` → **37/37 checks passed** |
 
 ## B. Already included (captured from the running system)
 
 ### `app/` (Flask demo, real browser screenshots)
 | File | Shows |
 |------|-------|
-| `01_home.png` | Home page: hardened (green) vs vulnerable (red) forms |
+| `00_security_lab.png` | Security lab: hardened (green) vs vulnerable (red) forms |
+| `01_storefront.png` / `01b_storefront_food.png` | The ShopDB storefront (search, category, sort) |
 | `02_vulnerable_login_bypassed.png` | `' OR '1'='1' --` logs in as selam.g without a password; the built SQL is shown |
 | `03_hardened_login_rejected.png` | Same payload on the hardened login → "Invalid username or password" |
 | `04_vulnerable_search_union_dump.png` | UNION injection dumps every username + password hash |
@@ -55,9 +57,11 @@ There are two sets:
 | `07a_vulnerable_price_attack.png` / `07b_laptop_now_costs_1_ETB.png` | Stacked query changes the laptop price to 1 ETB |
 | `08_account_locked_after_5_attempts.png` | Lockout after 5 wrong passwords |
 | `09_my_orders_rls.png` | Customer sees only their own orders (RLS + SESSION_CONTEXT) |
-| `10a_search_logged_in_with_buy.png` / `10b_order_placed.png` | Placing an order through `app.sp_PlaceOrder` |
+| `10a_cart.png` / `10b_order_placed.png` | Cart and checkout through `app.sp_PlaceOrderCart`; the new order in My account |
 | `11_register_weak_password_rejected.png` | Registration rejected by the password policy |
 | `12_mfa_setup_qr.png` … `16_mfa_login_success.png` | MFA setup, second-factor prompt, wrong code, success |
+| `17_staff_login.png` | Staff portal login (own SQL Server login) |
+| `18_staff_<login>.png` | Staff portal as sales_addis, sales_hawassa, support_dawit, shop_admin, auditor_meron |
 
 ### `sql/` (real `sqlcmd` output, rendered as images)
 | File | Shows |
@@ -77,7 +81,7 @@ There are two sets:
 | `sql_06b_lost_cert_drill.png` | Restore fails without the certificate (Msg 33111), works after restoring it |
 | `sql_07_mfa.png` | MFA procedures tested as the website login |
 | `sql_audit_log.png` | Audit log after the automated tests |
-| `smoke_test.png` | 22/22 automated end-to-end checks passed |
+| `smoke_test.png` | 37/37 automated end-to-end checks passed |
 
 All of these images are embedded, with explanations, in the written report
 `docs/ShopDB_Database_Security_Report.docx`.

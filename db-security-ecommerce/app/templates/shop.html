@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_icon.html" import icon %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>Selam! Shop Ethiopian favourites</h1>
+    <p>Coffee, spices, traditional clothing, electronics and more · delivered to Addis Ababa, Hawassa, Bahir Dar and Dire Dawa.</p>
+  </div>
+  <form class="searchbar" method="get" action="{{ url_for('shop') }}">
+    <input name="q" value="{{ q }}" placeholder="Search products… e.g. coffee" maxlength="50">
+    <select name="category">
+      <option value="">All categories</option>
+      {% for c in categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}
+    </select>
+    <select name="sort">
+      <option value="Name" {{ 'selected' if sort == 'Name' }}>Sort: name</option>
+      <option value="Price" {{ 'selected' if sort == 'Price' }}>Price: low → high</option>
+      <option value="PriceDesc" {{ 'selected' if sort == 'PriceDesc' }}>Price: high → low</option>
+      <option value="Category" {{ 'selected' if sort == 'Category' }}>Category</option>
+    </select>
+    <button>Search</button>
+  </form>
+</section>
+
+<div class="chips">
+  <a href="{{ url_for('shop') }}" class="chip {{ 'on' if not category }}">All</a>
+  {% for c in categories %}<a href="{{ url_for('shop', category=c) }}" class="chip {{ 'on' if c == category }}">{{ c }}</a>{% endfor %}
+</div>
+
+<div class="grid-products">
+  {% for p in products %}
+  <article class="product">
+    <div class="tile cat-{{ p.Category }}">{{ icon(p.Category) }}</div>
+    <div class="pbody">
+      <div class="pcat">{{ p.Category }} · {{ p.SKU }}</div>
+      <h3>{{ p.Name }}</h3>
+      <div class="price">{{ "{:,.2f}".format(p.Price) }} <small>ETB</small></div>
+      <div class="stock {{ 'low' if p.Stock < 10 }}">{{ 'Only ' ~ p.Stock ~ ' left' if p.Stock < 10 else 'In stock: ' ~ p.Stock }}</div>
+      <form method="post" action="{{ url_for('cart_add') }}" class="row compact">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="product_id" value="{{ p.ProductID }}">
+        <select name="quantity">{% for n in range(1, 6) %}<option>{{ n }}</option>{% endfor %}</select>
+        <button>Add to cart</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <p class="muted">No products found.</p>
+  {% endfor %}
+</div>
+
+<details class="howto">
+  <summary>🔒 How this page talks to the database</summary>
+  <p>The search box, category and sort order are sent to the stored procedure <code>app.sp_SearchProducts</code>
+     as <b>parameters</b>. The sort column is checked against an allow-list and wrapped with <code>QUOTENAME()</code>.
+     The website's login (<code>shop_app</code>) cannot read any table directly.</p>
+  <code class="block">{{ call }}</code>
+</details>
+{% endblock %}
