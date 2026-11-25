@@ -49,12 +49,13 @@ if (-not $Scripts) {
 }
 
 # -E = Windows login, -U/-P = SQL login.  -C trust the local self-signed
-# certificate, -b stop on errors, -I QUOTED_IDENTIFIER ON, -W trim spaces
+# certificate, -b stop on errors, -I QUOTED_IDENTIFIER ON, -W trim spaces,
+# -f 65001 read the .sql files as UTF-8
 $auth = if ($SqlAuth) { @("-U", "sa", "-P", $envVars["SA_PASSWORD"]) } else { @("-E") }
 
 foreach ($file in $Scripts) {
     Write-Host "=================== Running $file ===================" -ForegroundColor Cyan
-    & sqlcmd -S $Server @auth -C -b -I -W @varArgs -i $file
+    & sqlcmd -S $Server @auth -C -b -I -W -f 65001 @varArgs -i $file
     if ($LASTEXITCODE -ne 0) { throw "sqlcmd failed on $file (exit code $LASTEXITCODE)" }
 }
 Write-Host "Done." -ForegroundColor Green
