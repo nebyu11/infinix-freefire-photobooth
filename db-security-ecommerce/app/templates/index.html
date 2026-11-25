@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>1 · Product search</h2>
+<div class="grid">
+  <form class="panel good" method="get" action="{{ url_for('search') }}">
+    <h3>Hardened search <small>stored procedure + parameters</small></h3>
+    <input name="q" placeholder="e.g. coffee" value="{{ q if mode == 'hardened' else '' }}">
+    <div class="row">
+      <select name="sort">
+        <option>Name</option><option>Price</option><option>Category</option><option>Stock</option>
+      </select>
+      <select name="dir"><option>ASC</option><option>DESC</option></select>
+      <button>Search</button>
+    </div>
+  </form>
+  {% if vuln_enabled %}
+  <form class="panel bad" method="get" action="{{ url_for('vuln_search') }}">
+    <h3>Vulnerable search <small>LAB ONLY · string concatenation</small></h3>
+    <input name="q" placeholder="e.g. coffee" value="{{ q if mode == 'vulnerable' else '' }}">
+    <div class="row"><button class="danger">Search (unsafe)</button></div>
+  </form>
+  {% endif %}
+</div>
+
+{% if vuln_sql or sql_shown %}
+  <div class="sqlbox {{ 'bad' if vuln_sql else 'good' }}">
+    <b>SQL sent to the database:</b>
+    <code>{{ vuln_sql or sql_shown }}</code>
+  </div>
+{% endif %}
+{% if vuln_error %}<div class="sqlbox bad"><b>Database answered:</b> <code>{{ vuln_error }}</code></div>{% endif %}
+
+{% if products is defined %}
+  <table>
+    <tr><th>Name</th><th>Category</th><th>Price (ETB)</th>
+        {% if mode == 'hardened' %}<th>Stock</th>{% if session.user and session.user.customer_id %}<th>Order</th>{% endif %}{% endif %}</tr>
+    {% for p in products %}
+    <tr>
+      <td>{{ p.Name }}</td><td>{{ p.Category }}</td><td>{{ p.Price }}</td>
+      {% if mode == 'hardened' %}
+        <td>{{ p.Stock }}</td>
+        {% if session.user and session.user.customer_id %}
+        <td>
+          <form method="post" action="{{ url_for('place_order') }}" class="row compact">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="product_id" value="{{ p.ProductID }}">
+            <input name="quantity" type="number" min="1" max="10" value="1" class="qty">
+            <select name="method"><option>Telebirr</option><option>CBE Birr</option><option>Card</option><option>Cash on Delivery</option></select>
+            <button>Buy</button>
+          </form>
+        </td>
+        {% endif %}
+      {% endif %}
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">No products found.</td></tr>
+    {% endfor %}
+  </table>
+{% endif %}
+
+{% if not session.user %}
+<h2>2 · Log in</h2>
+<div class="grid">
+  <form class="panel good" method="post" action="{{ url_for('login') }}">
+    <h3>Hardened login <small>app.sp_Login · lockout · MFA</small></h3>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input name="username" placeholder="username" autocomplete="username">
+    <input name="password" type="password" placeholder="password" autocomplete="current-password">
+    <button>Log in</button>
+  </form>
+  {% if vuln_enabled %}
+  <form class="panel bad" method="post" action="{{ url_for('vuln_login') }}">
+    <h3>Vulnerable login <small>LAB ONLY · string concatenation</small></h3>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input name="username" placeholder="username">
+    <input name="password" type="text" placeholder="password (shown on purpose)">
+    <button class="danger">Log in (unsafe)</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if vuln_enabled %}
+<details class="payloads">
+  <summary>Demo payloads (copy into either form and compare)</summary>
+  <table>
+    <tr><th>Where</th><th>Payload</th><th>What it tries</th></tr>
+    <tr><td>Login · username</td><td><code>' OR '1'='1' --</code></td><td>log in without any password (first user)</td></tr>
+    <tr><td>Login · username</td><td><code>admin.tsehay' --</code></td><td>log in as the admin, password check commented out</td></tr>
+    <tr><td>Search</td><td><code>' UNION SELECT Username, Role + ' | ' + CONVERT(varchar(200), PasswordHash, 1), 0 FROM dbo.Users --</code></td><td>dump user names and password hashes</td></tr>
+    <tr><td>Search</td><td><code>'; UPDATE dbo.Products SET Price = 1 WHERE SKU = 'EL-LAP-002' --</code></td><td>change the laptop price to 1 ETB (fraud)</td></tr>
+    <tr><td>Search</td><td><code>'; DELETE FROM dbo.AuditLog --</code></td><td>erase the audit trail</td></tr>
+    <tr><td>Search</td><td><code>' AND 1=CONVERT(int, @@VERSION) --</code></td><td>error-based leak of server version</td></tr>
+  </table>
+</details>
+{% endif %}
+{% endblock %}

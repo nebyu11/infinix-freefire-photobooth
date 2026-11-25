@@ -1,0 +1,9 @@
+# Secrets and local environment - never commit these
+.env
+.venv/
+__pycache__/
+*.pyc
+# Key/certificate backups produced by 06_tde.sql (never commit keys!)
+*.cer
+*.pvk
+*.bak

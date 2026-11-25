@@ -1,0 +1,7 @@
+# Exact versions that were tested with this project
+Flask==3.1.3
+pyodbc==5.5.0
+pyotp==2.12.1
+qrcode[pil]==8.2
+cryptography==50.0.2
+python-dotenv==1.2.4

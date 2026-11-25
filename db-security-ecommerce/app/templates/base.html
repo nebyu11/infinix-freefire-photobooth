@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShopDB Security Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header>
+  <a class="brand" href="{{ url_for('index') }}">ShopDB <span>security demo</span></a>
+  <nav>
+    {% if session.user %}
+      <span class="who">{{ session.user.username }} · {{ session.user.role }} · via <b>{{ session.user.via }}</b></span>
+      {% if session.user.customer_id %}<a href="{{ url_for('orders') }}">My orders</a>{% endif %}
+      <a href="{{ url_for('account') }}">Account &amp; MFA</a>
+      <form method="post" action="{{ url_for('logout') }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="link">Log out</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('register') }}">Register</a>
+    {% endif %}
+  </nav>
+</header>
+<main>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+  {% if fatal %}<div class="flash error">{{ fatal }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

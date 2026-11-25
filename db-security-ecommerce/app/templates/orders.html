@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My orders</h2>
+<p class="muted">Procedure <code>app.sp_GetMyOrders</code> has no <code>WHERE</code> clause:
+Row-Level Security returns only the rows of the customer stored in <code>SESSION_CONTEXT</code>.</p>
+<table>
+  <tr><th>Order</th><th>Date</th><th>Status</th><th>Region</th><th>Items</th><th>Total (ETB)</th></tr>
+  {% for o in orders %}
+  <tr><td>#{{ o.OrderID }}</td><td>{{ o.OrderDate }}</td><td>{{ o.Status }}</td>
+      <td>{{ o.ShipRegion }}</td><td>{{ o.Items }}</td><td>{{ o.TotalAmount }}</td></tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">No orders yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Create a customer account</h2>
+<form class="panel good narrow" method="post">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label>Username <input name="username" placeholder="letters, digits, . _" required></label>
+  <label>Password <input name="password" type="password" required></label>
+  <p class="muted">At least 10 characters, upper + lower case, a digit and a symbol. Not your username, not a common password.</p>
+  <div class="row">
+    <label>First name <input name="first" required></label>
+    <label>Last name <input name="last" required></label>
+  </div>
+  <label>E-mail <input name="email" type="email" required></label>
+  <label>Phone <input name="phone" placeholder="+2519XXXXXXXX" required></label>
+  <div class="row">
+    <label>City <input name="city"></label>
+    <label>Region
+      <select name="region"><option>Addis Ababa</option><option>Hawassa</option><option>Bahir Dar</option><option>Dire Dawa</option></select>
+    </label>
+  </div>
+  <button>Register</button>
+</form>
+{% endblock %}

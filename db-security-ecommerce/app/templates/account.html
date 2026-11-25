@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Account</h2>
+<div class="grid">
+  <form class="panel good" method="post">
+    <h3>Change password <small>app.sp_ChangePassword</small></h3>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input name="old" type="password" placeholder="current password" required>
+    <input name="new" type="password" placeholder="new password" required>
+    <button>Change</button>
+  </form>
+  <div class="panel good">
+    <h3>Multi-factor authentication <small>TOTP</small></h3>
+    <p>Add a second factor: a 6-digit code from Google Authenticator / Microsoft Authenticator.</p>
+    <a class="button" href="{{ url_for('mfa_setup') }}">Set up MFA</a>
+  </div>
+</div>
+{% endblock %}
